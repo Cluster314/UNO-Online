@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online UNO - Account System</title>
+  
+  <!-- Inline SVG Favicon (UNO Card Icon) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e74c3c'/><path d='M20 80 L80 20 L80 80 Z' fill='%23f1c40f'/><circle cx='50' cy='50' r='25' fill='%233498db'/><text x='50' y='58' font-size='22' font-weight='bold' font-family='sans-serif' text-anchor='middle' fill='white'>UNO</text></svg>">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #1e272e; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    
+    .screen { width: 100%; max-width: 800px; background: #2c3e50; border-radius: 12px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); text-align: center; }
+    h1, h2, h3 { margin-bottom: 16px; }
+    
+    .auth-box { display: flex; flex-direction: column; width: 100%; max-width: 320px; margin: 0 auto; gap: 10px; }
+    .profile-card { background: #34495e; padding: 16px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .profile-card strong { color: #f1c40f; }
+
+    input, button { padding: 12px 16px; font-size: 1rem; border-radius: 6px; border: none; outline: none; margin: 6px 0; }
+    input { background: #ecf0f1; color: #2c3e50; text-align: center; font-weight: bold; width: 100%; }
+    button { background: #e74c3c; color: white; font-weight: bold; cursor: pointer; transition: background 0.2s; width: 100%; }
+    button:hover { background: #c0392b; }
+
+    .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .join-group { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 320px; }
+
+    /* Game Board Layout */
+    .game-header { display: flex; justify-content: space-between; align-items: center; background: #34495e; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; }
+    .table-area { display: flex; justify-content: center; align-items: center; gap: 40px; margin: 30px 0; }
+    
+    .card { width: 80px; height: 120px; border-radius: 10px; border: 3px solid #fff; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .card.red { background-color: #e74c3c; }
+    .card.blue { background-color: #3498db; }
+    .card.green { background-color: #2ecc71; }
+    .card.yellow { background-color: #f1c40f; color: #2c3e50; }
+    .card.black { background-color: #2d3436; }
+
+    .deck-slot { width: 80px; height: 120px; border: 2px dashed #bdc3c7; border-radius: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer; background: #34495e; }
+    .hand-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; min-height: 140px; padding: 10px; background: #1a252f; border-radius: 8px; }
+
+    .players-status { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+    .player-badge { padding: 8px 14px; border-radius: 20px; background: #34495e; font-size: 0.9rem; }
+    .player-badge.active-turn { border: 2px solid #f1c40f; font-weight: bold; }
+
+    .color-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 100; }
+    .color-picker { background: #2c3e50; padding: 20px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .color-btn { width: 80px; height: 80px; border-radius: 8px; border: none; cursor: pointer; }
+    
+    .results-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .results-table th, .results-table td { padding: 10px; border: 1px solid #34495e; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <!-- Color Selector Modal -->
+  <div class="color-modal" id="colorModal">
+    <div class="color-picker">
+      <button class="color-btn" style="background:#e74c3c" onclick="selectWildColor('red')"></button>
+      <button class="color-btn" style="background:#3498db" onclick="selectWildColor('blue')"></button>
+      <button class="color-btn" style="background:#2ecc71" onclick="selectWildColor('green')"></button>
+      <button class="color-btn" style="background:#f1c40f" onclick="selectWildColor('yellow')"></button>
+    </div>
+  </div>
+
+  <!-- 1. LOGIN / SIGN UP SCREEN -->
+  <div id="authScreen" class="screen">
+    <h1>Online UNO</h1>
+    <h3 id="authTitle">Log In to Your Account</h3>
+    
+    <div class="auth-box">
+      <input type="text" id="authUsername" placeholder="Username (for Sign Up)" style="display: none;">
+      <input type="email" id="authEmail" placeholder="Email Address">
+      <input type="password" id="authPassword" placeholder="Password">
+      
+      <button id="loginBtn">Log In</button>
+      <button id="signupBtn" style="background: #27ae60; display: none;">Sign Up</button>
+      <button id="toggleAuthBtn" style="background: transparent; text-decoration: underline; font-size: 0.85rem;">Need an account? Switch to Sign Up</button>
+    </div>
+  </div>
+
+  <!-- 2. MAIN LOBBY SCREEN -->
+  <div id="lobbyScreen" class="screen" style="display: none;">
+    <h1>Online UNO Lobby</h1>
+    
+    <div class="profile-card">
+      <div>Player: <strong id="profileName">--</strong></div>
+      <div>Level: <strong id="profileLevel">1</strong></div>
+      <div>XP: <strong id="profileXP">0</strong></div>
+      <div>Played: <strong id="profilePlayed">0</strong></div>
+      <div>Wins: <strong id="profileWins">0</strong></div>
+      <div>W/L: <strong id="profileRatio">0.00</strong></div>
+    </div>
+
+    <div class="lobby-controls">
+      <button id="createRoomBtn" style="background: #27ae60; max-width: 320px;">Create New Room</button>
+      <div class="join-group">
+        <input type="text" id="roomCodeInput" placeholder="6-Digit Code" maxlength="6">
+        <button id="joinRoomBtn">Join</button>
+      </div>
+      <button id="logoutBtn" style="background: #7f8c8d; max-width: 320px; margin-top: 20px;">Log Out</button>
+    </div>
+  </div>
+
+  <!-- 3. ROOM WAITING LOBBY -->
+  <div id="waitingScreen" class="screen" style="display: none;">
+    <h2>Room Code: <span id="displayRoomCode" style="color: #f1c40f;">------</span></h2>
+    <p style="margin-bottom: 20px;">Waiting for players (2 to 4 Players)...</p>
+    <div id="waitingPlayersList" class="players-status"></div>
+    <div style="margin-top: 20px;">
+      <button id="startMatchBtn" style="background: #27ae60; display: none; max-width: 320px;">Start Game</button>
+      <button id="leaveRoomBtn" style="max-width: 320px;">Leave Room</button>
+    </div>
+  </div>
+
+  <!-- 4. ACTIVE GAME SCREEN -->
+  <div id="gameScreen" class="screen" style="display: none;">
+    <div class="game-header">
+      <div>Room: <strong id="gameRoomCode">------</strong></div>
+      <div>Active Color: <strong id="activeColorDisplay" style="color:#f1c40f">RED</strong></div>
+    </div>
+    <div id="gamePlayersList" class="players-status"></div>
+
+    <div class="table-area">
+      <div>
+        <p style="font-size: 0.8rem; margin-bottom: 5px;">DRAW DECK</p>
+        <div id="drawDeckBtn" class="deck-slot" onclick="handleDrawClick()">DRAW</div>
+      </div>
+      <div>
+        <p style="font-size: 0.8rem; margin-bottom: 5px;">DISCARD PILE</p>
+        <div id="topCardDisplay" class="card red">--</div>
+      </div>
+    </div>
+
+    <h3>Your Hand</h3>
+    <div id="playerHand" class="hand-container"></div>
+  </div>
+
+  <!-- 5. RESULTS SCREEN -->
+  <div id="resultsScreen" class="screen" style="display: none;">
+    <h2>Game Over!</h2>
+    <table class="results-table">
+      <thead>
+        <tr><th>Place</th><th>Player</th><th>Base XP</th><th>Bonus XP</th><th>Total XP</th></tr>
+      </thead>
+      <tbody id="resultsTableBody"></tbody>
+    </table>
+    <button id="returnLobbyBtn" style="margin-top: 25px; background: #27ae60;">Return to Lobby</button>
+  </div>
+
+  <!-- FIREBASE & GAME ENGINE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue, update, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQXUIUCuy7h3SkMUAnP5WF4P9JjfeDkUQ",
+      authDomain: "uno-online-f96fc.firebaseapp.com",
+      projectId: "uno-online-f96fc",
+      storageBucket: "uno-online-f96fc.firebasestorage.app",
+      messagingSenderId: "367230905261",
+      appId: "1:367230905261:web:c57011bf2b4d0121140f24"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    let currentUser = null;
+    let userProfile = null;
+    let currentRoomCode = null;
+    let roomListener = null;
+    let pendingWildCardIndex = null;
+    let isSignUpMode = false;
+
+    // --- AUTHENTICATION FLOW ---
+    document.getElementById('toggleAuthBtn').onclick = () => {
+      isSignUpMode = !isSignUpMode;
+      document.getElementById('authTitle').innerText = isSignUpMode ? "Create New Account" : "Log In to Your Account";
+      document.getElementById('authUsername').style.display = isSignUpMode ? "block" : "none";
+      document.getElementById('signupBtn').style.display = isSignUpMode ? "block" : "none";
+      document.getElementById('loginBtn').style.display = isSignUpMode ? "none" : "block";
+      document.getElementById('toggleAuthBtn').innerText = isSignUpMode ? "Already have an account? Log In" : "Need an account? Switch to Sign Up";
+    };
+
+    document.getElementById('signupBtn').onclick = async () => {
+      const username = document.getElementById('authUsername').value.trim();
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+
+      if (!username || !email || !password) return alert("Please fill in all fields.");
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        if (cred && cred.user) {
+          await set(ref(db, `users/${cred.user.uid}`), {
+            name: username,
+            xp: 0,
+            level: 1,
+            gamesPlayed: 0,
+            gamesWon: 0
+          });
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    };
+
+    document.getElementById('loginBtn').onclick = async () => {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+
+      if (!email || !password) return alert("Please enter email and password.");
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert(err.message);
+      }
+    };
+
+    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
+    // Auto-Recovery for profiles missing in Realtime Database
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        const userRef = ref(db, `users/${user.uid}`);
+        onValue(userRef, async (snapshot) => {
+          if (snapshot.exists()) {
+            userProfile = snapshot.val();
+          } else {
+            userProfile = {
+              name: user.email ? user.email.split('@')[0] : "Player_" + Math.floor(1000 + Math.random() * 9000),
+              xp: 0,
+              level: 1,
+              gamesPlayed: 0,
+              gamesWon: 0
+            };
+            await set(userRef, userProfile);
+          }
+          updateProfileUI();
+        });
+        showScreen('lobbyScreen');
+      } else {
+        userProfile = null;
+        showScreen('authScreen');
+      }
+    });
+
+    function updateProfileUI() {
+      if (!userProfile) return;
+      document.getElementById('profileName').innerText = userProfile.name || "Player";
+      document.getElementById('profileXP').innerText = userProfile.xp || 0;
+      document.getElementById('profileLevel').innerText = Math.floor((userProfile.xp || 0) / 1000) + 1;
+      document.getElementById('profilePlayed').innerText = userProfile.gamesPlayed || 0;
+      document.getElementById('profileWins').innerText = userProfile.gamesWon || 0;
+      const ratio = userProfile.gamesPlayed > 0 ? (userProfile.gamesWon / userProfile.gamesPlayed).toFixed(2) : "0.00";
+      document.getElementById('profileRatio').innerText = ratio;
+    }
+
+    // --- DECK CREATION ---
+    function generateDeck() {
+      const colors = ['red', 'blue', 'green', 'yellow'];
+      const deck = [];
+      colors.forEach(color => {
+        deck.push({ color, type: 'number', value: '0', points: 0 });
+        for (let i = 1; i <= 9; i++) {
+          deck.push({ color, type: 'number', value: i.toString(), points: i }, { color, type: 'number', value: i.toString(), points: i });
+        }
+        ['skip', 'reverse', 'draw2'].forEach(type => {
+          deck.push({ color, type, value: type.toUpperCase(), points: 20 }, { color, type, value: type.toUpperCase(), points: 20 });
+        });
+      });
+      for (let i = 0; i < 4; i++) {
+        deck.push({ color: 'black', type: 'wild', value: 'WILD', points: 50 }, { color: 'black', type: 'wildDraw4', value: '+4', points: 50 });
+      }
+      return deck.sort(() => Math.random() - 0.5);
+    }
+
+    // --- LOBBY & MATCHMAKING ---
+    document.getElementById('createRoomBtn').onclick = async () => {
+      if (!userProfile || !userProfile.name) return alert("Profile loading... please try again in a moment.");
+
+      const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+      await set(ref(db, `rooms/${roomCode}`), {
+        hostId: currentUser.uid,
+        status: "waiting",
+        currentTurn: 0,
+        direction: 1,
+        currentColor: "red",
+        deck: [],
+        discardPile: [],
+        placements: [],
+        pendingDrawCount: 0,
+        players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false }]
+      });
+      enterRoom(roomCode);
+    };
+
+    document.getElementById('joinRoomBtn').onclick = async () => {
+      if (!userProfile || !userProfile.name) return alert("Profile loading... please try again in a moment.");
+
+      const code = document.getElementById('roomCodeInput').value.trim();
+      if (code.length !== 6) return alert("Room code must be 6 digits.");
+
+      const res = await runTransaction(ref(db, `rooms/${code}`), (room) => {
+        if (!room || room.status !== "waiting" || room.players.length >= 4) return;
+        if (!room.players.find(p => p.id === currentUser.uid)) {
+          room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false });
+        }
+        if (room.players.length === 4) startMatch(room);
+        return room;
+      });
+
+      if (res.committed && res.snapshot.exists()) enterRoom(code);
+      else alert("Room full, playing, or invalid.");
+    };
+
+    function enterRoom(code) {
+      currentRoomCode = code;
+      showScreen('waitingScreen');
+      document.getElementById('displayRoomCode').innerText = code;
+
+      if (roomListener) roomListener();
+      roomListener = onValue(ref(db, `rooms/${code}`), (snapshot) => {
+        const room = snapshot.val();
+        if (!room) return leaveLobby();
+
+        if (room.status === "waiting") {
+          document.getElementById('waitingPlayersList').innerHTML = room.players.map(p => `
+            <div class="player-badge">${p.name} ${p.id === room.hostId ? '👑' : ''}</div>
+          `).join('');
+          document.getElementById('startMatchBtn').style.display = (room.hostId === currentUser.uid && room.players.length >= 2) ? 'block' : 'none';
+        } else if (room.status === "playing") {
+          showScreen('gameScreen');
+          renderGame(room);
+        } else if (room.status === "finished") {
+          showScreen('resultsScreen');
+          renderResults(room);
+        }
+      });
+    }
+
+    document.getElementById('startMatchBtn').onclick = () => {
+      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
+        if (room && room.players.length >= 2) startMatch(room);
+        return room;
+      });
+    };
+
+    function startMatch(room) {
+      room.status = "playing";
+      const deck = generateDeck();
+      room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; });
+      let initialDiscard = deck.pop();
+      while (initialDiscard.color === 'black') { deck.unshift(initialDiscard); initialDiscard = deck.pop(); }
+      room.deck = deck;
+      room.discardPile = [initialDiscard];
+      room.currentColor = initialDiscard.color;
+      room.currentTurn = 0;
+      room.direction = 1;
+      room.placements = [];
+      room.pendingDrawCount = 0;
+    }
+
+    document.getElementById('leaveRoomBtn').onclick = leaveLobby;
+    function leaveLobby() {
+      if (roomListener) roomListener();
+      currentRoomCode = null;
+      showScreen('lobbyScreen');
+    }
+
+    // --- GAMEPLAY ---
+    function renderGame(room) {
+      document.getElementById('gameRoomCode').innerText = currentRoomCode;
+      document.getElementById('activeColorDisplay').innerText = room.currentColor.toUpperCase();
+      
+      const topCard = room.discardPile[room.discardPile.length - 1];
+      const topCardEl = document.getElementById('topCardDisplay');
+      topCardEl.className = `card ${topCard.color}`;
+      topCardEl.innerText = topCard.value;
+
+      document.getElementById('gamePlayersList').innerHTML = room.players.map((p, idx) => `
+        <div class="player-badge ${idx === room.currentTurn ? 'active-turn' : ''}">
+          ${p.name} (${p.hand ? p.hand.length : 0})
+        </div>
+      `).join('');
+
+      const myData = room.players.find(p => p.id === currentUser.uid);
+      const handContainer = document.getElementById('playerHand');
+      handContainer.innerHTML = '';
+
+      if (myData && myData.hand && !myData.out) {
+        myData.hand.forEach((card, idx) => {
+          const cardEl = document.createElement('div');
+          cardEl.className = `card ${card.color}`;
+          cardEl.innerText = card.value;
+          cardEl.onclick = () => handleCardClick(idx, room);
+          handContainer.appendChild(cardEl);
+        });
+      }
+    }
+
+    function handleCardClick(cardIndex, room) {
+      const myIndex = room.players.findIndex(p => p.id === currentUser.uid);
+      if (room.currentTurn !== myIndex) return alert("Not your turn!");
+
+      const card = room.players[myIndex].hand[cardIndex];
+      const topCard = room.discardPile[room.discardPile.length - 1];
+
+      if (room.pendingDrawCount > 0 && card.type !== 'draw2' && card.type !== 'wildDraw4') {
+        return alert(`Must draw +${room.pendingDrawCount} or play a draw card!`);
+      }
+
+      if (card.color !== 'black' && card.color !== room.currentColor && card.value !== topCard.value) {
+        return alert("Invalid move!");
+      }
+
+      if (card.color === 'black') {
+        pendingWildCardIndex = cardIndex;
+        document.getElementById('colorModal').style.display = 'flex';
+      } else {
+        playCard(cardIndex, card.color);
+      }
+    }
+
+    window.selectWildColor = (color) => {
+      document.getElementById('colorModal').style.display = 'none';
+      if (pendingWildCardIndex !== null) {
+        playCard(pendingWildCardIndex, color);
+        pendingWildCardIndex = null;
+      }
+    };
+
+    function playCard(cardIndex, chosenColor) {
+      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
+        if (!room) return room;
+        const player = room.players[room.currentTurn];
+        const card = player.hand.splice(cardIndex, 1)[0];
+
+        room.discardPile.push(card);
+        room.currentColor = chosenColor;
+
+        if (card.type === 'draw2') room.pendingDrawCount += 2;
+        if (card.type === 'wildDraw4') room.pendingDrawCount += 4;
+        
+        let step = card.type === 'skip' ? 2 : 1;
+        if (card.type === 'reverse') {
+          if (room.players.length === 2) step = 2;
+          else room.direction *= -1;
+        }
+
+        advanceTurn(room, step);
+
+        if (player.hand.length === 0) {
+          player.out = true;
+          if (room.pendingDrawCount > 0) {
+            drawCards(room, room.currentTurn, room.pendingDrawCount);
+            room.pendingDrawCount = 0;
+          }
+          room.placements.push({ id: player.id, name: player.name, place: room.placements.length + 1 });
+        }
+
+        const active = room.players.filter(p => !p.out);
+        if (active.length === 1) {
+          active[0].out = true;
+          room.placements.push({ id: active[0].id, name: active[0].name, place: room.placements.length + 1 });
+          room.status = "finished";
+          calculateXP(room);
+        }
+        return room;
+      });
+    }
+
+    window.handleDrawClick = () => {
+      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
+        if (!room || room.players.findIndex(p => p.id === currentUser.uid) !== room.currentTurn) return room;
+        const count = room.pendingDrawCount > 0 ? room.pendingDrawCount : 1;
+        drawCards(room, room.currentTurn, count);
+        room.pendingDrawCount = 0;
+        advanceTurn(room, 1);
+        return room;
+      });
+    };
+
+    function drawCards(room, playerIdx, count) {
+      for (let i = 0; i < count; i++) {
+        if (room.deck.length === 0) {
+          const top = room.discardPile.pop();
+          room.deck = room.discardPile.sort(() => Math.random() - 0.5);
+          room.discardPile = [top];
+        }
+        if (room.deck.length > 0) room.players[playerIdx].hand.push(room.deck.pop());
+      }
+    }
+
+    function advanceTurn(room, step) {
+      let active = 0;
+      let next = room.currentTurn;
+      while (active < step) {
+        next = (next + room.direction + room.players.length) % room.players.length;
+        if (!room.players[next].out) active++;
+      }
+      room.currentTurn = next;
+    }
+
+    // --- XP PROCESSING ---
+    function calculateXP(room) {
+      const handPoints = {};
+      room.players.forEach(p => {
+        handPoints[p.id] = (p.hand || []).reduce((a, b) => a + (b.points || 0), 0);
+      });
+
+      room.finalResults = room.placements.map(entry => {
+        let baseXP = 0, bonusXP = 0;
+        if (entry.place === 1) {
+          baseXP = 100;
+          bonusXP = Object.values(handPoints).reduce((a, b) => a + b, 0);
+        } else if (entry.place === 2) {
+          baseXP = 50;
+          room.placements.filter(p => p.place > 2).forEach(p => bonusXP += handPoints[p.id] || 0);
+        } else if (entry.place === 3) {
+          baseXP = 35;
+          const p4 = room.placements.find(p => p.place === 4);
+          if (p4) bonusXP = handPoints[p4.id] || 0;
+        } else {
+          baseXP = 25;
+        }
+
+        return { id: entry.id, name: entry.name, place: entry.place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
+      });
+
+      // Save XP & stats directly to user accounts
+      room.finalResults.forEach(res => {
+        runTransaction(ref(db, `users/${res.id}`), (u) => {
+          if (!u) return u;
+          u.gamesPlayed = (u.gamesPlayed || 0) + 1;
+          if (res.place === 1) u.gamesWon = (u.gamesWon || 0) + 1;
+          u.xp = (u.xp || 0) + res.totalXP;
+          u.level = Math.floor(u.xp / 1000) + 1;
+          return u;
+        });
+      });
+    }
+
+    function renderResults(room) {
+      if (!room.finalResults) return;
+      document.getElementById('resultsTableBody').innerHTML = room.finalResults.map(r => `
+        <tr>
+          <td>#${r.place}</td>
+          <td>${r.name}</td>
+          <td>${r.baseXP}</td>
+          <td>${r.bonusXP}</td>
+          <td><strong>+${r.totalXP} XP</strong></td>
+        </tr>
+      `).join('');
+    }
+
+    document.getElementById('returnLobbyBtn').onclick = leaveLobby;
+
+    function showScreen(id) {
+      ['authScreen', 'lobbyScreen', 'waitingScreen', 'gameScreen', 'resultsScreen'].forEach(s => {
+        document.getElementById(s).style.display = s === id ? 'block' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>
