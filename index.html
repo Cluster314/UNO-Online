@@ -26,6 +26,13 @@
     .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .join-group { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 320px; }
 
+    /* Friends System Styles */
+    .friends-container { background: #2f3640; border-radius: 10px; padding: 16px; margin: 20px 0; border: 1px solid #353b48; text-align: left; }
+    .friends-list-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; }
+    .friend-item { display: flex; justify-content: space-between; align-items: center; background: #353b48; padding: 8px 12px; border-radius: 6px; }
+    .friend-actions { display: flex; gap: 6px; }
+    .friend-actions button { padding: 4px 8px; font-size: 0.8rem; margin: 0; width: auto; }
+
     .waiting-actions { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 20px auto 0 auto; width: 100%; max-width: 450px; }
     .waiting-actions button { flex: 1; margin: 0; }
 
@@ -146,8 +153,28 @@
         <input type="text" id="roomCodeInput" placeholder="6-Digit Code" maxlength="6">
         <button id="joinRoomBtn">Join</button>
       </div>
-      <button id="logoutBtn" style="background: #718093; max-width: 320px; margin-top: 20px;">Log Out</button>
     </div>
+
+    <!-- FRIENDS SYSTEM SECTION -->
+    <div class="friends-container">
+      <h3>Friends</h3>
+      <div style="display: flex; gap: 8px;">
+        <input type="text" id="friendSearchInput" placeholder="Enter Exact Username">
+        <button id="sendFriendReqBtn" style="background: #00a8ff; width: auto;">Add Friend</button>
+      </div>
+      
+      <div style="margin-top: 12px;">
+        <strong style="font-size: 0.85rem; color: #f1c40f;">Pending Requests</strong>
+        <div id="pendingRequestsList" class="friends-list-group"></div>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <strong style="font-size: 0.85rem; color: #4cd137;">Friend List</strong>
+        <div id="friendsList" class="friends-list-group"></div>
+      </div>
+    </div>
+
+    <button id="logoutBtn" style="background: #718093; max-width: 320px; margin-top: 10px;">Log Out</button>
 
     <div class="game-credits">
       UNO® is a registered trademark created by Merle Robbins (1971) and owned by Mattel, Inc.
@@ -161,6 +188,7 @@
     <div id="waitingPlayersList" class="players-status"></div>
     
     <div class="waiting-actions">
+      <button id="copyInviteLinkBtn" style="background: #00a8ff; display: none;">Copy Invite Link</button>
       <button id="startMatchBtn" style="background: #4cd137; display: none;">Start Game</button>
       <button id="leaveRoomBtn">Leave Room</button>
     </div>
@@ -281,7 +309,7 @@
           await set(ref(db, `users/${cred.user.uid}`), profile);
           userProfile = profile;
           updateProfileUI();
-          showScreen('lobbyScreen');
+          checkUrlRoomJoin();
         }
       } catch (err) {
         alert(`[SIGNUP ERROR] ${err.code || err.name}: ${err.message}`);
@@ -321,8 +349,9 @@
             await set(userRef, userProfile);
           }
           updateProfileUI();
+          listenToFriendsData();
+          checkUrlRoomJoin();
         });
-        showScreen('lobbyScreen');
       } else {
         userProfile = null;
         showScreen('authScreen');
@@ -351,6 +380,100 @@
 
       document.getElementById('profileRatio').innerText = ratio;
     }
+
+    // --- URL ROOM AUTO-JOIN ENGINE ---
+    async function checkUrlRoomJoin() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomFromUrl = urlParams.get('room');
+
+      if (roomFromUrl && roomFromUrl.length === 6) {
+        await joinRoomByCode(roomFromUrl);
+      } else {
+        showScreen('lobbyScreen');
+      }
+    }
+
+    // --- FRIENDS SYSTEM LOGIC ---
+    function listenToFriendsData() {
+      if (!currentUser) return;
+
+      // Pending Incoming Requests
+      onValue(ref(db, `friends/${currentUser.uid}/requests`), (snapshot) => {
+        const requests = snapshot.val() || {};
+        const container = document.getElementById('pendingRequestsList');
+        container.innerHTML = '';
+
+        Object.keys(requests).forEach(reqUid => {
+          const name = requests[reqUid].name;
+          const div = document.createElement('div');
+          div.className = 'friend-item';
+          div.innerHTML = `
+            <span>${name}</span>
+            <div class="friend-actions">
+              <button style="background: #4cd137;" onclick="acceptFriend('${reqUid}', '${name}')">Accept</button>
+              <button style="background: #e74c3c;" onclick="declineFriend('${reqUid}')">Decline</button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+
+        if (Object.keys(requests).length === 0) {
+          container.innerHTML = `<span style="font-size: 0.8rem; color: #8c96a0;">No pending requests</span>`;
+        }
+      });
+
+      // Accepted Friends List
+      onValue(ref(db, `friends/${currentUser.uid}/list`), (snapshot) => {
+        const friends = snapshot.val() || {};
+        const container = document.getElementById('friendsList');
+        container.innerHTML = '';
+
+        Object.keys(friends).forEach(fUid => {
+          const name = friends[fUid].name;
+          const div = document.createElement('div');
+          div.className = 'friend-item';
+          div.innerHTML = `<span>${name}</span>`;
+          container.appendChild(div);
+        });
+
+        if (Object.keys(friends).length === 0) {
+          container.innerHTML = `<span style="font-size: 0.8rem; color: #8c96a0;">No friends added yet</span>`;
+        }
+      });
+    }
+
+    document.getElementById('sendFriendReqBtn').onclick = async () => {
+      const searchName = document.getElementById('friendSearchInput').value.trim();
+      if (!searchName) return alert("Please enter a username.");
+      if (searchName === userProfile.name) return alert("You cannot add yourself.");
+
+      const usersSnap = await get(ref(db, 'users'));
+      if (!usersSnap.exists()) return alert("User not found.");
+
+      let targetUid = null;
+      usersSnap.forEach(child => {
+        if (child.val().name === searchName) targetUid = child.key;
+      });
+
+      if (!targetUid) return alert("User not found.");
+
+      await set(ref(db, `friends/${targetUid}/requests/${currentUser.uid}`), {
+        name: userProfile.name
+      });
+
+      alert(`Friend request sent to ${searchName}!`);
+      document.getElementById('friendSearchInput').value = '';
+    };
+
+    window.acceptFriend = async (friendUid, friendName) => {
+      await set(ref(db, `friends/${currentUser.uid}/list/${friendUid}`), { name: friendName });
+      await set(ref(db, `friends/${friendUid}/list/${currentUser.uid}`), { name: userProfile.name });
+      await remove(ref(db, `friends/${currentUser.uid}/requests/${friendUid}`));
+    };
+
+    window.declineFriend = async (friendUid) => {
+      await remove(ref(db, `friends/${currentUser.uid}/requests/${friendUid}`));
+    };
 
     // --- CLEANUP AND DECK ENGINE ---
     async function leaveCurrentRoom() {
@@ -440,9 +563,13 @@
     };
 
     document.getElementById('joinRoomBtn').onclick = async () => {
-      if (!currentUser || !userProfile || !userProfile.name) return alert("Error: Profile loading...");
       const code = document.getElementById('roomCodeInput').value.trim();
-      if (code.length !== 6) return alert("Room code must be 6 digits.");
+      await joinRoomByCode(code);
+    };
+
+    async function joinRoomByCode(code) {
+      if (!currentUser || !userProfile || !userProfile.name) return;
+      if (!code || code.length !== 6) return alert("Room code must be 6 digits.");
 
       try {
         const roomRef = ref(db, `rooms/${code}`);
@@ -465,7 +592,7 @@
 
         if (res.committed) enterRoom(code);
       } catch (err) { alert(`[JOIN ERROR] ${err.message}`); }
-    };
+    }
 
     function enterRoom(code) {
       currentRoomCode = code;
@@ -490,6 +617,8 @@
           
           const isHost = room.hostId === currentUser.uid;
           const hasEnoughPlayers = room.players.length >= 2;
+          
+          document.getElementById('copyInviteLinkBtn').style.display = isHost ? 'block' : 'none';
           document.getElementById('startMatchBtn').style.display = (isHost && hasEnoughPlayers) ? 'block' : 'none';
         } else if (room.status === "playing") {
           showScreen('gameScreen');
@@ -500,6 +629,16 @@
         }
       });
     }
+
+    // Copy Room Link Handler
+    document.getElementById('copyInviteLinkBtn').onclick = () => {
+      const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoomCode}`;
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        alert("Invite link copied to clipboard!");
+      }).catch(err => {
+        alert("Failed to copy link: " + err);
+      });
+    };
 
     document.getElementById('startMatchBtn').onclick = () => {
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
@@ -529,6 +668,8 @@
     function leaveLobbyUI() {
       if (roomListener) roomListener();
       currentRoomCode = null;
+      // Clean room parameter out of URL when leaving back to lobby
+      window.history.replaceState({}, document.title, window.location.pathname);
       showScreen('lobbyScreen');
     }
 
@@ -669,7 +810,6 @@
     function checkUnoPenaltyAndAdvance(room, step = 1) {
       const currentPlayer = room.players[room.currentTurn];
 
-      // AUTOMATED UNO PENALTY CHECK (Must have exactly 1 card and NOT have called UNO)
       if (currentPlayer.hand.length === 1 && !currentPlayer.calledUno) {
         drawCards(room, room.currentTurn, 2);
         room.notification = `Penalty! ${currentPlayer.name} forgot to say UNO (+2 Cards)!`;
@@ -826,7 +966,6 @@
         return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
       });
 
-      // Strict Win Recording Fix
       room.finalResults.forEach(res => {
         runTransaction(ref(db, `users/${res.id}`), (u) => {
           if (!u) return u;
