@@ -208,7 +208,7 @@
           showScreen('lobbyScreen');
         }
       } catch (err) {
-        alert(err.message);
+        alert(`[SIGNUP ERROR] ${err.code || err.name}: ${err.message}`);
       }
     };
 
@@ -221,7 +221,7 @@
       try {
         await signInWithEmailAndPassword(auth, email, password);
       } catch (err) {
-        alert(err.message);
+        alert(`[LOGIN ERROR] ${err.code || err.name}: ${err.message}`);
       }
     };
 
@@ -300,23 +300,27 @@
 
     async function cleanupPreviousRooms() {
       if (!currentUser) return;
-      const roomsRef = ref(db, 'rooms');
-      const snapshot = await get(roomsRef);
-      if (!snapshot.exists()) return;
+      try {
+        const roomsRef = ref(db, 'rooms');
+        const snapshot = await get(roomsRef);
+        if (!snapshot.exists()) return;
 
-      const rooms = snapshot.val();
-      for (const code in rooms) {
-        const room = rooms[code];
-        if (room.hostId === currentUser.uid) {
-          await remove(ref(db, `rooms/${code}`));
-        } else if (room.players && room.players.some(p => p.id === currentUser.uid)) {
-          await runTransaction(ref(db, `rooms/${code}`), (r) => {
-            if (r && r.players) {
-              r.players = r.players.filter(p => p.id !== currentUser.uid);
-            }
-            return r;
-          });
+        const rooms = snapshot.val();
+        for (const code in rooms) {
+          const room = rooms[code];
+          if (room.hostId === currentUser.uid) {
+            await remove(ref(db, `rooms/${code}`));
+          } else if (room.players && room.players.some(p => p.id === currentUser.uid)) {
+            await runTransaction(ref(db, `rooms/${code}`), (r) => {
+              if (r && r.players) {
+                r.players = r.players.filter(p => p.id !== currentUser.uid);
+              }
+              return r;
+            });
+          }
         }
+      } catch(e) {
+        console.warn("Cleanup warning:", e);
       }
     }
 
@@ -338,62 +342,91 @@
       return deck.sort(() => Math.random() - 0.5);
     }
 
-    // --- LOBBY LOGIC ---
+    // --- DIAGNOSTIC LOBBY HANDLERS ---
     document.getElementById('createRoomBtn').onclick = async () => {
-      if (!userProfile || !userProfile.name) return alert("Profile loading... please try again in a moment.");
+      console.log("=== CREATE ROOM STARTED ===");
+      if (!currentUser) return alert("Error: No authenticated user found.");
+      if (!userProfile || !userProfile.name) return alert("Error: userProfile is missing or incomplete.");
 
       await cleanupPreviousRooms();
 
       const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
       const roomRef = ref(db, `rooms/${roomCode}`);
 
-      await set(roomRef, {
-        hostId: currentUser.uid,
-        status: "waiting",
-        currentTurn: 0,
-        direction: 1,
-        currentColor: "red",
-        deck: [],
-        discardPile: [],
-        placements: [],
-        pendingDrawCount: 0,
-        players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false }]
-      });
+      try {
+        await set(roomRef, {
+          hostId: currentUser.uid,
+          status: "waiting",
+          currentTurn: 0,
+          direction: 1,
+          currentColor: "red",
+          deck: [],
+          discardPile: [],
+          placements: [],
+          pendingDrawCount: 0,
+          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false }]
+        });
 
-      onDisconnect(roomRef).remove();
-      enterRoom(roomCode);
+        onDisconnect(roomRef).remove();
+        console.log(`Room created successfully with code: ${roomCode}`);
+        enterRoom(roomCode);
+      } catch (err) {
+        console.error("Create Room Failed:", err);
+        alert(`[CREATE ERROR] ${err.code || err.name}: ${err.message}`);
+      }
     };
 
     document.getElementById('joinRoomBtn').onclick = async () => {
-      if (!userProfile || !userProfile.name) return alert("Profile loading... please try again in a moment.");
+      console.log("=== JOIN ROOM STARTED ===");
+      
+      if (!currentUser) {
+        console.error("Join blocked: currentUser is null");
+        return alert("Join Failed: You are not logged in.");
+      }
+      if (!userProfile || !userProfile.name) {
+        console.error("Join blocked: userProfile missing", userProfile);
+        return alert("Join Failed: Profile not loaded yet. Try again in a moment.");
+      }
 
-      const code = document.getElementById('roomCodeInput').value.trim().toString();
-      if (code.length !== 6) return alert("Room code must be 6 digits.");
+      const rawInput = document.getElementById('roomCodeInput').value;
+      const code = rawInput.trim().toString();
+      console.log(`Input room code: "${code}" (Length: ${code.length})`);
+
+      if (code.length !== 6) {
+        return alert(`Join Failed: Room code must be 6 digits (You typed ${code.length} characters).`);
+      }
 
       try {
         const roomRef = ref(db, `rooms/${code}`);
+
+        console.log(`Fetching path: rooms/${code}...`);
         const snapshot = await get(roomRef);
 
         if (!snapshot.exists()) {
-          return alert("Room code does not exist!");
+          console.warn(`Path "rooms/${code}" does not exist in the database.`);
+          return alert(`Join Failed: Room code "${code}" was not found in database.`);
         }
 
         const roomData = snapshot.val();
+        console.log("Room Data found:", roomData);
+
         if (roomData.status !== "waiting") {
-          return alert("Game has already started or finished.");
+          return alert(`Join Failed: Room status is "${roomData.status}" (must be "waiting").`);
         }
 
-        const currentPlayers = roomData.players || [];
-        const isAlreadyInRoom = currentPlayers.some(p => p.id === currentUser.uid);
+        const players = roomData.players || [];
+        const isAlreadyMember = players.some(p => p.id === currentUser.uid);
 
-        if (currentPlayers.length >= 4 && !isAlreadyInRoom) {
-          return alert("Room is full (Maximum 4 players).");
+        if (players.length >= 4 && !isAlreadyMember) {
+          return alert(`Join Failed: Room is full (${players.length}/4 players).`);
         }
 
+        console.log("Attempting database transaction...");
         await cleanupPreviousRooms();
 
         const res = await runTransaction(roomRef, (room) => {
           if (room === null) return room;
+
           if (!room.players) room.players = [];
 
           const existingIdx = room.players.findIndex(p => p.id === currentUser.uid);
@@ -405,13 +438,18 @@
           return room;
         });
 
+        console.log("Transaction Result:", res);
+
         if (res.committed) {
+          console.log("Successfully joined room!");
           enterRoom(code);
         } else {
-          alert("Could not join room. Please try again.");
+          alert("[TRANSACTION ABORTED] Database refused to commit transaction.");
         }
+
       } catch (err) {
-        alert("Error joining room: " + err.message);
+        console.error("Join Room Threw Error:", err);
+        alert(`[DATABASE ERROR] ${err.code || err.name}: ${err.message}`);
       }
     };
 
