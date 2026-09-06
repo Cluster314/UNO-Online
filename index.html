@@ -26,7 +26,6 @@
     .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .join-group { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 320px; }
 
-    /* ALIGNED BUTTON CONTAINER FOR WAITING ROOM */
     .waiting-actions {
       display: flex;
       justify-content: center;
@@ -46,7 +45,6 @@
     .game-header { display: flex; justify-content: space-between; align-items: center; background: #2f3640; padding: 14px 24px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
     .table-area { display: flex; justify-content: center; align-items: center; gap: 50px; margin: 25px 0; background: radial-gradient(circle, #273c75 0%, #192a56 100%); padding: 30px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.1); }
     
-    /* REALISTIC CARD STYLING */
     .uno-card {
       width: 90px;
       height: 135px;
@@ -69,14 +67,12 @@
       z-index: 10;
     }
 
-    /* CARD COLORS */
     .uno-card.red { background-color: #e84118; }
     .uno-card.blue { background-color: #00a8ff; }
     .uno-card.green { background-color: #4cd137; }
     .uno-card.yellow { background-color: #fbc531; }
     .uno-card.black { background-color: #2f3640; }
 
-    /* CARD INNER OVAL DESIGN */
     .uno-card::before {
       content: '';
       position: absolute;
@@ -92,7 +88,6 @@
       background: conic-gradient(#e84118 0deg 90deg, #00a8ff 90deg 180deg, #4cd137 180deg 270deg, #fbc531 270deg 360deg);
     }
 
-    /* CARD VALUE CONTENT */
     .uno-card .card-value {
       position: relative;
       z-index: 2;
@@ -107,7 +102,6 @@
       text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
     }
 
-    /* MINI CORNER SYMBOLS */
     .uno-card .corner-symbol {
       position: absolute;
       font-size: 0.75rem;
@@ -118,7 +112,6 @@
     .uno-card .corner-symbol.top-left { top: 4px; left: 6px; }
     .uno-card .corner-symbol.bottom-right { bottom: 4px; right: 6px; transform: rotate(180deg); }
 
-    /* BACK OF CARD (DECK) */
     .uno-card-back {
       background: linear-gradient(135deg, #2c3e50, #000000);
       border: 4px solid #ffffff;
@@ -143,7 +136,6 @@
       transform: rotate(-15deg);
     }
 
-    /* ANIMATED HIGHLIGHT FOR PLAYABLE DRAWN CARD */
     @keyframes pulseGlow {
       0% { box-shadow: 0 0 10px #f1c40f, 0 6px 16px rgba(0,0,0,0.4); transform: scale(1); }
       50% { box-shadow: 0 0 25px #f1c40f, 0 10px 20px rgba(0,0,0,0.6); transform: scale(1.08); }
@@ -154,7 +146,6 @@
       border-color: #f1c40f;
     }
 
-    /* ANIMATION FOR DRAWING CARDS */
     @keyframes drawCardAnim {
       0% { opacity: 0; transform: translateY(-50px) scale(0.5); }
       100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -177,7 +168,6 @@
     .results-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     .results-table th, .results-table td { padding: 12px; border: 1px solid #353b48; text-align: center; }
 
-    /* CREDITS STYLING */
     .game-credits {
       margin-top: 25px;
       font-size: 0.75rem;
@@ -186,7 +176,6 @@
       border-top: 1px solid rgba(255,255,255,0.08);
       padding-top: 12px;
     }
-    .game-credits a { color: #f1c40f; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -337,7 +326,6 @@
     let pendingWildCardIndex = null;
     let isSignUpMode = false;
 
-    // Symbol translation map for official symbols
     const SYMBOLS = {
       'skip': '⊘',
       'reverse': '⇄',
@@ -471,22 +459,18 @@
       } catch(e) { console.warn("Cleanup warning:", e); }
     }
 
-    // OFFICIAL 108-CARD UNO DECK GENERATOR
     function generateDeck() {
       const colors = ['red', 'blue', 'green', 'yellow'];
       const deck = [];
 
       colors.forEach(color => {
-        // 1x '0' card per color
         deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: '0', points: 0 });
         
-        // 2x '1-9' cards per color
         for (let i = 1; i <= 9; i++) {
           deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: i.toString(), points: i });
           deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: i.toString(), points: i });
         }
 
-        // 2x Action cards per color
         ['skip', 'reverse', 'draw2'].forEach(type => {
           const val = SYMBOLS[type];
           deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
@@ -494,7 +478,6 @@
         });
       });
 
-      // 4x Wild & 4x Wild Draw 4
       for (let i = 0; i < 4; i++) {
         deck.push({ id: Math.random().toString(36).substr(2, 9), color: 'black', type: 'wild', value: SYMBOLS['wild'], points: 50 });
         deck.push({ id: Math.random().toString(36).substr(2, 9), color: 'black', type: 'wildDraw4', value: SYMBOLS['wildDraw4'], points: 50 });
@@ -570,7 +553,6 @@
             <div class="player-badge">${p.name} ${p.id === room.hostId ? '👑' : ''}</div>
           `).join('');
           
-          // Display start match button cleanly alongside leave room button
           const isHost = room.hostId === currentUser.uid;
           const hasEnoughPlayers = room.players.length >= 2;
           document.getElementById('startMatchBtn').style.display = (isHost && hasEnoughPlayers) ? 'block' : 'none';
@@ -704,6 +686,11 @@
     function playCard(cardIndex, chosenColor) {
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
+
+        if (!room.placements) {
+          room.placements = [];
+        }
+
         const player = room.players[room.currentTurn];
         const card = player.hand.splice(cardIndex, 1)[0];
 
@@ -713,11 +700,9 @@
 
         let turnStep = 1;
 
-        // Skip Card
         if (card.type === 'skip') {
           turnStep = 2;
         } 
-        // Reverse Card: In 1v1 (2 active players), Reverse acts like a Skip
         else if (card.type === 'reverse') {
           const activeCount = room.players.filter(p => !p.out).length;
           if (activeCount === 2) {
@@ -726,17 +711,15 @@
             room.direction *= -1;
           }
         } 
-        // Draw 2 (+2) Card
         else if (card.type === 'draw2') {
           const targetPlayerIdx = getNextPlayerIndex(room, room.currentTurn, 1);
           drawCards(room, targetPlayerIdx, 2);
-          turnStep = 2; // Skip target player's turn
+          turnStep = 2;
         } 
-        // Wild Draw 4 (+4) Card
         else if (card.type === 'wildDraw4') {
           const targetPlayerIdx = getNextPlayerIndex(room, room.currentTurn, 1);
           drawCards(room, targetPlayerIdx, 4);
-          turnStep = 2; // Skip target player's turn
+          turnStep = 2;
         }
 
         advanceTurn(room, turnStep);
@@ -757,7 +740,6 @@
       });
     }
 
-    // DRAW MECHANIC
     window.handleDrawClick = () => {
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
@@ -768,7 +750,7 @@
         const drawnCard = drawCards(room, myIdx, 1)[0];
 
         if (drawnCard && isCardValid(drawnCard, room)) {
-          player.drawnPlayableId = drawnCard.id; // Highlight card for immediate play
+          player.drawnPlayableId = drawnCard.id;
         } else {
           player.drawnPlayableId = null;
           advanceTurn(room, 1);
@@ -780,7 +762,6 @@
     function drawCards(room, playerIdx, count) {
       const drawnList = [];
       for (let i = 0; i < count; i++) {
-        // RESHUFFLE MECHANIC WHEN DECK IS EMPTY
         if (!room.deck || room.deck.length === 0) {
           if (room.discardPile.length > 1) {
             const top = room.discardPile.pop();
@@ -807,7 +788,6 @@
       room.currentTurn = next;
     }
 
-    // --- XP CALCULATIONS ---
     function calculateXP(room) {
       const handPoints = {};
       room.players.forEach(p => {
