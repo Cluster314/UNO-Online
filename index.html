@@ -26,6 +26,23 @@
     .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .join-group { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 320px; }
 
+    /* ALIGNED BUTTON CONTAINER FOR WAITING ROOM */
+    .waiting-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 450px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .waiting-actions button {
+      flex: 1;
+      margin: 0;
+    }
+
     .game-header { display: flex; justify-content: space-between; align-items: center; background: #2f3640; padding: 14px 24px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
     .table-area { display: flex; justify-content: center; align-items: center; gap: 50px; margin: 25px 0; background: radial-gradient(circle, #273c75 0%, #192a56 100%); padding: 30px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.1); }
     
@@ -237,9 +254,10 @@
     <h2>Room Code: <span id="displayRoomCode" style="color: #fbc531;">------</span></h2>
     <p style="margin-bottom: 20px;">Waiting for players (2 to 4 Players)...</p>
     <div id="waitingPlayersList" class="players-status"></div>
-    <div style="margin-top: 20px;">
-      <button id="startMatchBtn" style="background: #4cd137; display: none; max-width: 320px;">Start Game</button>
-      <button id="leaveRoomBtn" style="max-width: 320px;">Leave Room</button>
+    
+    <div class="waiting-actions">
+      <button id="startMatchBtn" style="background: #4cd137; display: none;">Start Game</button>
+      <button id="leaveRoomBtn">Leave Room</button>
     </div>
 
     <div class="game-credits">
@@ -472,7 +490,7 @@
         ['skip', 'reverse', 'draw2'].forEach(type => {
           const val = SYMBOLS[type];
           deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
-          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
+          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: val, points: 20 });
         });
       });
 
@@ -495,7 +513,7 @@
       try {
         await set(roomRef, {
           hostId: currentUser.uid, status: "waiting", currentTurn: 0, direction: 1, currentColor: "red",
-          deck: [], discardPile: [], placements: [], pendingDrawCount: 0,
+          deck: [], discardPile: [], placements: [],
           players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null }]
         });
         onDisconnect(roomRef).remove();
@@ -551,7 +569,11 @@
           document.getElementById('waitingPlayersList').innerHTML = room.players.map(p => `
             <div class="player-badge">${p.name} ${p.id === room.hostId ? '👑' : ''}</div>
           `).join('');
-          document.getElementById('startMatchBtn').style.display = (room.hostId === currentUser.uid && room.players.length >= 2) ? 'block' : 'none';
+          
+          // Display start match button cleanly alongside leave room button
+          const isHost = room.hostId === currentUser.uid;
+          const hasEnoughPlayers = room.players.length >= 2;
+          document.getElementById('startMatchBtn').style.display = (isHost && hasEnoughPlayers) ? 'block' : 'none';
         } else if (room.status === "playing") {
           showScreen('gameScreen');
           renderGame(room);
@@ -576,7 +598,6 @@
           room.currentTurn = 0;
           room.direction = 1;
           room.placements = [];
-          room.pendingDrawCount = 0;
         }
         return room;
       });
@@ -641,7 +662,6 @@
 
     function isCardValid(card, room) {
       const topCard = room.discardPile[room.discardPile.length - 1];
-      if (room.pendingDrawCount > 0) return card.type === 'draw2' || card.type === 'wildDraw4';
       return card.color === 'black' || card.color === room.currentColor || card.value === topCard.value;
     }
 
@@ -671,6 +691,16 @@
       }
     };
 
+    function getNextPlayerIndex(room, current, step = 1) {
+      let count = 0;
+      let target = current;
+      while (count < step) {
+        target = (target + room.direction + room.players.length) % room.players.length;
+        if (!room.players[target].out) count++;
+      }
+      return target;
+    }
+
     function playCard(cardIndex, chosenColor) {
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
@@ -681,23 +711,34 @@
         room.discardPile.push(card);
         room.currentColor = chosenColor;
 
-        if (card.type === 'draw2') room.pendingDrawCount += 2;
-        if (card.type === 'wildDraw4') room.pendingDrawCount += 4;
-        
-        let step = card.type === 'skip' ? 2 : 1;
-        if (card.type === 'reverse') {
-          if (room.players.length === 2) step = 2;
+        let turnStep = 1;
+
+        // Skip Card
+        if (card.type === 'skip') {
+          turnStep = 2;
+        } 
+        // Reverse Card
+        else if (card.type === 'reverse') {
+          if (room.players.length === 2) turnStep = 2;
           else room.direction *= -1;
+        } 
+        // Draw 2 (+2) Card
+        else if (card.type === 'draw2') {
+          const targetPlayerIdx = getNextPlayerIndex(room, room.currentTurn, 1);
+          drawCards(room, targetPlayerIdx, 2); // Force cards directly into victim's hand
+          turnStep = 2; // Skip target player's turn
+        } 
+        // Wild Draw 4 (+4) Card
+        else if (card.type === 'wildDraw4') {
+          const targetPlayerIdx = getNextPlayerIndex(room, room.currentTurn, 1);
+          drawCards(room, targetPlayerIdx, 4); // Force cards directly into victim's hand
+          turnStep = 2; // Skip target player's turn
         }
 
-        advanceTurn(room, step);
+        advanceTurn(room, turnStep);
 
         if (player.hand.length === 0) {
           player.out = true;
-          if (room.pendingDrawCount > 0) {
-            drawCards(room, room.currentTurn, room.pendingDrawCount);
-            room.pendingDrawCount = 0;
-          }
           room.placements.push({ id: player.id, name: player.name, place: room.placements.length + 1 });
         }
 
@@ -712,7 +753,7 @@
       });
     }
 
-    // DRAW MECHANIC (MATCH ON DRAW & AUTO RESHUFFLE)
+    // DRAW MECHANIC
     window.handleDrawClick = () => {
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
@@ -720,22 +761,13 @@
         if (myIdx !== room.currentTurn) return room;
 
         const player = room.players[myIdx];
+        const drawnCard = drawCards(room, myIdx, 1)[0];
 
-        if (room.pendingDrawCount > 0) {
-          drawCards(room, myIdx, room.pendingDrawCount);
-          room.pendingDrawCount = 0;
+        if (drawnCard && isCardValid(drawnCard, room)) {
+          player.drawnPlayableId = drawnCard.id; // Highlight card for immediate play
+        } else {
           player.drawnPlayableId = null;
           advanceTurn(room, 1);
-        } else {
-          // Draw 1 card
-          const drawnCard = drawCards(room, myIdx, 1)[0];
-
-          if (drawnCard && isCardValid(drawnCard, room)) {
-            player.drawnPlayableId = drawnCard.id; // Highlight card for immediate play
-          } else {
-            player.drawnPlayableId = null;
-            advanceTurn(room, 1);
-          }
         }
         return room;
       });
