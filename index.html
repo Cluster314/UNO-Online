@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Online UNO - Account System</title>
   
-  <!-- Inline SVG Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e74c3c'/><path d='M20 80 L80 20 L80 80 Z' fill='%23f1c40f'/><circle cx='50' cy='50' r='25' fill='%233498db'/><text x='50' y='58' font-size='22' font-weight='bold' font-family='sans-serif' text-anchor='middle' fill='white'>UNO</text></svg>">
 
   <style>
@@ -27,7 +26,6 @@
     .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .join-group { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 320px; }
 
-    /* Game Board Layout */
     .game-header { display: flex; justify-content: space-between; align-items: center; background: #34495e; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; }
     .table-area { display: flex; justify-content: center; align-items: center; gap: 40px; margin: 30px 0; }
     
@@ -65,7 +63,7 @@
     </div>
   </div>
 
-  <!-- 1. LOGIN / SIGN UP SCREEN -->
+  <!-- AUTH SCREEN -->
   <div id="authScreen" class="screen">
     <h1>Online UNO</h1>
     <h3 id="authTitle">Log In to Your Account</h3>
@@ -81,7 +79,7 @@
     </div>
   </div>
 
-  <!-- 2. MAIN LOBBY SCREEN -->
+  <!-- LOBBY SCREEN -->
   <div id="lobbyScreen" class="screen" style="display: none;">
     <h1>Online UNO Lobby</h1>
     
@@ -104,7 +102,7 @@
     </div>
   </div>
 
-  <!-- 3. ROOM WAITING LOBBY -->
+  <!-- WAITING ROOM SCREEN -->
   <div id="waitingScreen" class="screen" style="display: none;">
     <h2>Room Code: <span id="displayRoomCode" style="color: #f1c40f;">------</span></h2>
     <p style="margin-bottom: 20px;">Waiting for players (2 to 4 Players)...</p>
@@ -115,7 +113,7 @@
     </div>
   </div>
 
-  <!-- 4. ACTIVE GAME SCREEN -->
+  <!-- GAME SCREEN -->
   <div id="gameScreen" class="screen" style="display: none;">
     <div class="game-header">
       <div>Room: <strong id="gameRoomCode">------</strong></div>
@@ -138,7 +136,7 @@
     <div id="playerHand" class="hand-container"></div>
   </div>
 
-  <!-- 5. RESULTS SCREEN -->
+  <!-- RESULTS SCREEN -->
   <div id="resultsScreen" class="screen" style="display: none;">
     <h2>Game Over!</h2>
     <table class="results-table">
@@ -177,7 +175,7 @@
     let pendingWildCardIndex = null;
     let isSignUpMode = false;
 
-    // --- AUTHENTICATION FLOW ---
+    // --- AUTHENTICATION ---
     document.getElementById('toggleAuthBtn').onclick = () => {
       isSignUpMode = !isSignUpMode;
       document.getElementById('authTitle').innerText = isSignUpMode ? "Create New Account" : "Log In to Your Account";
@@ -269,7 +267,7 @@
       document.getElementById('profileRatio').innerText = ratio;
     }
 
-    // --- ROOM CLEANUP AND LEAVING LOGIC ---
+    // --- CLEANUP AND ROOM MANAGEMENT ---
     async function leaveCurrentRoom() {
       if (!currentRoomCode || !currentUser) return;
 
@@ -281,11 +279,9 @@
         if (snapshot.exists()) {
           const room = snapshot.val();
 
-          // If current user is the host, delete the whole room
           if (room.hostId === currentUser.uid) {
             await remove(roomRef);
           } else {
-            // Remove user from the players list
             await runTransaction(roomRef, (currentRoom) => {
               if (currentRoom && currentRoom.players) {
                 currentRoom.players = currentRoom.players.filter(p => p.id !== currentUser.uid);
@@ -324,7 +320,6 @@
       }
     }
 
-    // --- DECK CREATION ---
     function generateDeck() {
       const colors = ['red', 'blue', 'green', 'yellow'];
       const deck = [];
@@ -343,7 +338,7 @@
       return deck.sort(() => Math.random() - 0.5);
     }
 
-    // --- LOBBY & MATCHMAKING ---
+    // --- LOBBY LOGIC ---
     document.getElementById('createRoomBtn').onclick = async () => {
       if (!userProfile || !userProfile.name) return alert("Profile loading... please try again in a moment.");
 
@@ -365,44 +360,58 @@
         players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false }]
       });
 
-      // Auto-delete room if host disconnects abruptly
       onDisconnect(roomRef).remove();
-
       enterRoom(roomCode);
     };
 
     document.getElementById('joinRoomBtn').onclick = async () => {
       if (!userProfile || !userProfile.name) return alert("Profile loading... please try again in a moment.");
 
-      const code = document.getElementById('roomCodeInput').value.trim();
+      const code = document.getElementById('roomCodeInput').value.trim().toString();
       if (code.length !== 6) return alert("Room code must be 6 digits.");
 
-      await cleanupPreviousRooms();
+      try {
+        const roomRef = ref(db, `rooms/${code}`);
+        const snapshot = await get(roomRef);
 
-      const roomRef = ref(db, `rooms/${code}`);
-      const snapshot = await get(roomRef);
-
-      if (!snapshot.exists()) return alert("Room code does not exist!");
-
-      const roomData = snapshot.val();
-      if (roomData.status !== "waiting") return alert("Game already started or finished.");
-      if (roomData.players && roomData.players.length >= 4) return alert("Room is full.");
-
-      const res = await runTransaction(roomRef, (room) => {
-        if (!room) return room;
-        if (!room.players) room.players = [];
-
-        const exists = room.players.some(p => p.id === currentUser.uid);
-        if (!exists) {
-          room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false });
+        if (!snapshot.exists()) {
+          return alert("Room code does not exist!");
         }
-        return room;
-      });
 
-      if (res.committed) {
-        enterRoom(code);
-      } else {
-        alert("Failed to join room.");
+        const roomData = snapshot.val();
+        if (roomData.status !== "waiting") {
+          return alert("Game has already started or finished.");
+        }
+
+        const currentPlayers = roomData.players || [];
+        const isAlreadyInRoom = currentPlayers.some(p => p.id === currentUser.uid);
+
+        if (currentPlayers.length >= 4 && !isAlreadyInRoom) {
+          return alert("Room is full (Maximum 4 players).");
+        }
+
+        await cleanupPreviousRooms();
+
+        const res = await runTransaction(roomRef, (room) => {
+          if (room === null) return room;
+          if (!room.players) room.players = [];
+
+          const existingIdx = room.players.findIndex(p => p.id === currentUser.uid);
+          if (existingIdx !== -1) {
+            room.players[existingIdx].name = userProfile.name;
+          } else {
+            room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false });
+          }
+          return room;
+        });
+
+        if (res.committed) {
+          enterRoom(code);
+        } else {
+          alert("Could not join room. Please try again.");
+        }
+      } catch (err) {
+        alert("Error joining room: " + err.message);
       }
     };
 
@@ -414,20 +423,18 @@
       if (roomListener) roomListener();
 
       roomListener = onValue(ref(db, `rooms/${code}`), (snapshot) => {
-        // Handle Host Deletion or Missing Room
         if (!snapshot.exists()) {
-          alert("The room host has left or closed the room.");
+          alert("The room no longer exists.");
           leaveLobbyUI();
           return;
         }
 
         const room = snapshot.val();
 
-        // Verify Host presence
         const hostExists = room.players && room.players.some(p => p.id === room.hostId);
         if (!hostExists) {
           remove(ref(db, `rooms/${code}`));
-          alert("Host left the room. Room destroyed.");
+          alert("Host left the room. Room deleted.");
           leaveLobbyUI();
           return;
         }
@@ -480,7 +487,7 @@
       showScreen('lobbyScreen');
     }
 
-    // --- GAMEPLAY LOGIC ---
+    // --- GAMEPLAY HANDLERS ---
     function renderGame(room) {
       document.getElementById('gameRoomCode').innerText = currentRoomCode;
       document.getElementById('activeColorDisplay').innerText = room.currentColor.toUpperCase();
@@ -614,7 +621,7 @@
       room.currentTurn = next;
     }
 
-    // --- XP PROCESSING ---
+    // --- XP SYSTEM ---
     function calculateXP(room) {
       const handPoints = {};
       room.players.forEach(p => {
