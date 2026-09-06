@@ -3,1031 +3,208 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Online UNO - Account System</title>
+  <title>UNO Online</title>
   
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e74c3c'/><path d='M20 80 L80 20 L80 80 Z' fill='%23f1c40f'/><circle cx='50' cy='50' r='25' fill='%233498db'/><text x='50' y='58' font-size='22' font-weight='bold' font-family='sans-serif' text-anchor='middle' fill='white'>UNO</text></svg>">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
-    body { background-color: #1b262c; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-    
-    .screen { width: 100%; max-width: 900px; background: #222f3e; border-radius: 16px; padding: 24px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); text-align: center; border: 1px solid rgba(255,255,255,0.05); position: relative; }
-    h1, h2, h3 { margin-bottom: 16px; font-weight: 800; letter-spacing: 1px; }
-    
-    .auth-box { display: flex; flex-direction: column; width: 100%; max-width: 320px; margin: 0 auto; gap: 10px; }
-    .profile-card { background: #2f3640; padding: 16px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 10px; border: 1px solid #353b48; }
-    .profile-card strong { color: #f1c40f; }
-
-    input, button { padding: 12px 16px; font-size: 1rem; border-radius: 8px; border: none; outline: none; margin: 6px 0; }
-    input { background: #ecf0f1; color: #2c3e50; text-align: center; font-weight: bold; width: 100%; }
-    button { background: #e74c3c; color: white; font-weight: bold; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-    button:hover { background: #c0392b; transform: translateY(-2px); }
-
-    .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    .join-group { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 320px; }
-
-    /* Friends System Styles */
-    .friends-container { background: #2f3640; border-radius: 10px; padding: 16px; margin: 20px 0; border: 1px solid #353b48; text-align: left; }
-    .friends-list-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; }
-    .friend-item { display: flex; justify-content: space-between; align-items: center; background: #353b48; padding: 8px 12px; border-radius: 6px; }
-    .friend-actions { display: flex; gap: 6px; }
-    .friend-actions button { padding: 4px 8px; font-size: 0.8rem; margin: 0; width: auto; }
-
-    .waiting-actions { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 20px auto 0 auto; width: 100%; max-width: 450px; }
-    .waiting-actions button { flex: 1; margin: 0; }
-
-    .game-header { display: flex; justify-content: space-between; align-items: center; background: #2f3640; padding: 14px 24px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
-    .table-area { display: flex; justify-content: center; align-items: center; gap: 40px; margin: 20px 0; background: radial-gradient(circle, #273c75 0%, #192a56 100%); padding: 25px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.1); }
-    
-    .uno-card {
-      width: 90px; height: 135px; border-radius: 10px; border: 4px solid #ffffff;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.4); position: relative; display: flex;
-      justify-content: center; align-items: center; cursor: pointer;
-      transition: transform 0.25s ease, box-shadow 0.25s ease; background: #111; overflow: hidden;
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     }
-    .uno-card:hover { transform: translateY(-10px) scale(1.05); box-shadow: 0 12px 24px rgba(0,0,0,0.6); z-index: 10; }
-    .uno-card.red { background-color: #e84118; }
-    .uno-card.blue { background-color: #00a8ff; }
-    .uno-card.green { background-color: #4cd137; }
-    .uno-card.yellow { background-color: #fbc531; }
-    .uno-card.black { background-color: #2f3640; }
-
-    .uno-card::before {
-      content: ''; position: absolute; width: 70px; height: 110px; border-radius: 50%;
-      background: rgba(255, 255, 255, 0.95); transform: rotate(-25deg); box-shadow: inset 0 0 8px rgba(0,0,0,0.15);
-    }
-    .uno-card.black::before { background: conic-gradient(#e84118 0deg 90deg, #00a8ff 90deg 180deg, #4cd137 180deg 270deg, #fbc531 270deg 360deg); }
-
-    .uno-card .card-value { position: relative; z-index: 2; font-size: 2.2rem; font-weight: 900; font-style: italic; color: #2f3640; text-shadow: 2px 2px 0px rgba(255,255,255,0.8), -1px -1px 0px rgba(0,0,0,0.2); }
-    .uno-card.black .card-value { color: #ffffff; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
-
-    .uno-card .corner-symbol { position: absolute; font-size: 0.75rem; font-weight: bold; color: #ffffff; z-index: 3; }
-    .uno-card .corner-symbol.top-left { top: 4px; left: 6px; }
-    .uno-card .corner-symbol.bottom-right { bottom: 4px; right: 6px; transform: rotate(180deg); }
-
-    .uno-card-back { background: linear-gradient(135deg, #2c3e50, #000000); border: 4px solid #ffffff; }
-    .uno-card-back::before { content: ''; position: absolute; width: 70px; height: 110px; border-radius: 50%; background: #e74c3c; transform: rotate(-25deg); }
-    .uno-card-back .logo { position: relative; z-index: 2; font-weight: 900; font-style: italic; color: #f1c40f; font-size: 1.1rem; text-shadow: 2px 2px 0 #000; transform: rotate(-15deg); }
-
-    @keyframes pulseGlow {
-      0% { box-shadow: 0 0 10px #f1c40f, 0 6px 16px rgba(0,0,0,0.4); transform: scale(1); }
-      50% { box-shadow: 0 0 25px #f1c40f, 0 10px 20px rgba(0,0,0,0.6); transform: scale(1.08); }
-      100% { box-shadow: 0 0 10px #f1c40f, 0 6px 16px rgba(0,0,0,0.4); transform: scale(1); }
-    }
-    .uno-card.playable-draw { animation: pulseGlow 1.2s infinite; border-color: #f1c40f; }
-
-    .hand-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 15px; min-height: 160px; padding: 15px; background: #192a56; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
-
-    .players-status { display: flex; justify-content: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
-    .player-badge { padding: 8px 16px; border-radius: 20px; background: #2f3640; font-size: 0.9rem; border: 1px solid #353b48; }
-    .player-badge.active-turn { border: 2px solid #f1c40f; font-weight: bold; background: #353b48; box-shadow: 0 0 12px rgba(241, 196, 15, 0.4); }
-
-    .color-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
-    .color-picker { background: #2f3640; padding: 24px; border-radius: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border: 2px solid #353b48; }
-    .color-btn { width: 90px; height: 90px; border-radius: 12px; border: 3px solid #fff; cursor: pointer; transition: transform 0.2s; }
-    .color-btn:hover { transform: scale(1.1); }
-
-    .action-bar { display: flex; justify-content: center; gap: 12px; margin-top: 10px; }
-    .action-bar button { width: auto; min-width: 130px; margin: 0; }
-    .uno-btn { background: #fbc531; color: #2c3e50; }
-    .uno-btn.active { background: #4cd137; color: white; }
-
-    .announcement-banner { background: #eb4d4b; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; margin-bottom: 12px; display: none; }
-
-    .results-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    .results-table th, .results-table td { padding: 12px; border: 1px solid #353b48; text-align: center; }
-
-    .game-credits { margin-top: 25px; font-size: 0.75rem; color: #8c96a0; line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
   </style>
 </head>
-<body>
+<body class="min-h-screen flex items-center justify-center p-4">
 
-  <!-- Color Selector Modal -->
-  <div class="color-modal" id="colorModal">
-    <div class="color-picker">
-      <button class="color-btn" style="background:#e84118" onclick="selectWildColor('red')"></button>
-      <button class="color-btn" style="background:#00a8ff" onclick="selectWildColor('blue')"></button>
-      <button class="color-btn" style="background:#4cd137" onclick="selectWildColor('green')"></button>
-      <button class="color-btn" style="background:#fbc531" onclick="selectWildColor('yellow')"></button>
+  <!-- Main Friends List Card -->
+  <div class="w-full max-w-md bg-slate-900 text-white rounded-xl p-5 shadow-2xl border border-slate-800">
+    
+    <!-- App Header -->
+    <div class="flex items-center justify-between mb-5 border-b border-slate-800 pb-3">
+      <h1 class="text-xl font-black tracking-wider text-red-500 uppercase flex items-center gap-2">
+        <i data-lucide="gamepad-2" class="w-6 h-6"></i> UNO Online
+      </h1>
+      <span class="text-xs bg-slate-800 px-2.5 py-1 rounded-full text-slate-400 border border-slate-700">
+        Friends (3)
+      </span>
+    </div>
+
+    <!-- Friends List Container -->
+    <div id="friends-list" class="space-y-3">
+      <!-- Friends rendered dynamically via JS -->
     </div>
   </div>
 
-  <!-- AUTH SCREEN -->
-  <div id="authScreen" class="screen">
-    <h1>Online UNO</h1>
-    <h3 id="authTitle">Log In to Your Account</h3>
-    
-    <div class="auth-box">
-      <input type="text" id="authUsername" placeholder="Username (for Sign Up)" style="display: none;">
-      <input type="email" id="authEmail" placeholder="Email Address">
-      <input type="password" id="authPassword" placeholder="Password">
+  <!-- Profile Modal (Hidden by Default) -->
+  <div id="profile-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl p-6 relative text-center shadow-2xl">
       
-      <button id="loginBtn">Log In</button>
-      <button id="signupBtn" style="background: #4cd137; display: none;">Sign Up</button>
-      <button id="toggleAuthBtn" style="background: transparent; box-shadow: none; text-decoration: underline; font-size: 0.85rem;">Need an account? Switch to Sign Up</button>
-    </div>
+      <!-- Close Button -->
+      <button id="close-modal-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
 
-    <div class="game-credits">
-      UNO® is a registered trademark created by Merle Robbins (1971) and owned by Mattel, Inc.<br>
-      This fan-made multiplayer edition is built for educational & non-commercial entertainment purposes.
-    </div>
-  </div>
+      <!-- Profile Header -->
+      <img id="modal-avatar" src="" alt="Avatar" class="w-20 h-20 mx-auto rounded-full bg-slate-800 border-2 border-red-500 mb-3" />
+      <h3 id="modal-username" class="text-xl font-extrabold text-white">---</h3>
+      <div id="modal-status-badge" class="mt-2 inline-block"></div>
 
-  <!-- LOBBY SCREEN -->
-  <div id="lobbyScreen" class="screen" style="display: none;">
-    <h1>Online UNO Lobby</h1>
-    
-    <div class="profile-card">
-      <div>Player: <strong id="profileName">--</strong></div>
-      <div>Level: <strong id="profileLevel">1</strong></div>
-      <div>XP: <strong id="profileXP">0</strong></div>
-      <div>Played: <strong id="profilePlayed">0</strong></div>
-      <div>Wins: <strong id="profileWins">0</strong></div>
-      <div>Losses: <strong id="profileLosses">0</strong></div>
-      <div>W/L Ratio: <strong id="profileRatio">0.00</strong></div>
-    </div>
-
-    <div class="lobby-controls">
-      <button id="createRoomBtn" style="background: #4cd137; max-width: 320px;">Create New Room</button>
-      <div class="join-group">
-        <input type="text" id="roomCodeInput" placeholder="6-Digit Code" maxlength="6">
-        <button id="joinRoomBtn">Join</button>
-      </div>
-    </div>
-
-    <!-- FRIENDS SYSTEM SECTION -->
-    <div class="friends-container">
-      <h3>Friends</h3>
-      <div style="display: flex; gap: 8px;">
-        <input type="text" id="friendSearchInput" placeholder="Enter Exact Username">
-        <button id="sendFriendReqBtn" style="background: #00a8ff; width: auto;">Add Friend</button>
-      </div>
-      
-      <div style="margin-top: 12px;">
-        <strong style="font-size: 0.85rem; color: #f1c40f;">Pending Requests</strong>
-        <div id="pendingRequestsList" class="friends-list-group"></div>
-      </div>
-
-      <div style="margin-top: 12px;">
-        <strong style="font-size: 0.85rem; color: #4cd137;">Friend List</strong>
-        <div id="friendsList" class="friends-list-group"></div>
-      </div>
-    </div>
-
-    <button id="logoutBtn" style="background: #718093; max-width: 320px; margin-top: 10px;">Log Out</button>
-
-    <div class="game-credits">
-      UNO® is a registered trademark created by Merle Robbins (1971) and owned by Mattel, Inc.
-    </div>
-  </div>
-
-  <!-- WAITING ROOM SCREEN -->
-  <div id="waitingScreen" class="screen" style="display: none;">
-    <h2>Room Code: <span id="displayRoomCode" style="color: #fbc531;">------</span></h2>
-    <p style="margin-bottom: 20px;">Waiting for players (2 to 4 Players)...</p>
-    <div id="waitingPlayersList" class="players-status"></div>
-    
-    <div class="waiting-actions">
-      <button id="copyInviteLinkBtn" style="background: #00a8ff; display: none;">Copy Invite Link</button>
-      <button id="startMatchBtn" style="background: #4cd137; display: none;">Start Game</button>
-      <button id="leaveRoomBtn">Leave Room</button>
-    </div>
-
-    <div class="game-credits">
-      UNO® card mechanics inspired by standard official rules.
-    </div>
-  </div>
-
-  <!-- GAME SCREEN -->
-  <div id="gameScreen" class="screen" style="display: none;">
-    <div id="announcementBanner" class="announcement-banner"></div>
-
-    <div class="game-header">
-      <div>Room: <strong id="gameRoomCode">------</strong></div>
-      <div>Active Color: <strong id="activeColorDisplay" style="color:#fbc531">RED</strong></div>
-    </div>
-    <div id="gamePlayersList" class="players-status"></div>
-
-    <div class="table-area">
-      <div style="text-align: center;">
-        <p style="font-size: 0.75rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px;">DRAW DECK (<span id="deckCount">0</span>)</p>
-        <div id="drawDeckBtn" class="uno-card uno-card-back" onclick="handleDrawClick()">
-          <div class="logo">UNO</div>
+      <!-- Player Statistics -->
+      <div class="grid grid-cols-3 gap-2 bg-slate-800/80 border border-slate-700/50 p-3 rounded-xl my-5 text-center">
+        <div>
+          <p class="text-xs text-slate-400 mb-1">Wins</p>
+          <p id="modal-wins" class="font-black text-green-400 text-lg">0</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 mb-1">Played</p>
+          <p id="modal-played" class="font-black text-slate-200 text-lg">0</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 mb-1">Win %</p>
+          <p id="modal-winrate" class="font-black text-yellow-400 text-lg">0%</p>
         </div>
       </div>
-      <div style="text-align: center;">
-        <p style="font-size: 0.75rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px;">DISCARD PILE</p>
-        <div id="topCardDisplay"></div>
+
+      <!-- Action Buttons -->
+      <div id="modal-actions" class="space-y-2">
+        <!-- Dynamically injected based on status -->
       </div>
     </div>
-
-    <div class="action-bar">
-      <button id="callUnoBtn" class="uno-btn" onclick="callUno()">SAY UNO!</button>
-      <button id="passTurnBtn" style="background: #e67e22; display: none;" onclick="passTurn()">Pass Turn</button>
-    </div>
-
-    <h3>Your Hand</h3>
-    <div id="playerHand" class="hand-container"></div>
-
-    <div class="game-credits">
-      UNO® Game Mechanics Original Concept by Merle Robbins. Brand owned by Mattel, Inc.
-    </div>
   </div>
 
-  <!-- RESULTS SCREEN -->
-  <div id="resultsScreen" class="screen" style="display: none;">
-    <h2>Game Over!</h2>
-    <table class="results-table">
-      <thead>
-        <tr><th>Place</th><th>Player</th><th>Base XP</th><th>Bonus XP</th><th>Total XP</th></tr>
-      </thead>
-      <tbody id="resultsTableBody"></tbody>
-    </table>
-    <button id="returnLobbyBtn" style="margin-top: 25px; background: #4cd137;">Return to Lobby</button>
-
-    <div class="game-credits">
-      Thanks for playing! UNO® is a trademark of Mattel, Inc.
-    </div>
-  </div>
-
-  <!-- FIREBASE ENGINE -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-    import { getDatabase, ref, set, get, update, onValue, remove, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBQXUIUCuy7h3SkMUAnP5WF4P9JjfeDkUQ",
-      authDomain: "uno-online-f96fc.firebaseapp.com",
-      databaseURL: "https://uno-online-f96fc-default-rtdb.firebaseio.com",
-      projectId: "uno-online-f96fc",
-      storageBucket: "uno-online-f96fc.firebasestorage.app",
-      messagingSenderId: "367230905261",
-      appId: "1:367230905261:web:c57011bf2b4d0121140f24"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
-
-    let currentUser = null;
-    let userProfile = null;
-    let currentRoomCode = null;
-    let roomListener = null;
-    let pendingWildCardIndex = null;
-    let isSignUpMode = false;
-
-    const SYMBOLS = {
-      'skip': '⊘',
-      'reverse': '⇄',
-      'draw2': '+2',
-      'wild': '★',
-      'wildDraw4': '+4'
-    };
-
-    // --- AUTHENTICATION ---
-    document.getElementById('toggleAuthBtn').onclick = () => {
-      isSignUpMode = !isSignUpMode;
-      document.getElementById('authTitle').innerText = isSignUpMode ? "Create New Account" : "Log In to Your Account";
-      document.getElementById('authUsername').style.display = isSignUpMode ? "block" : "none";
-      document.getElementById('signupBtn').style.display = isSignUpMode ? "block" : "none";
-      document.getElementById('loginBtn').style.display = isSignUpMode ? "none" : "block";
-      document.getElementById('toggleAuthBtn').innerText = isSignUpMode ? "Already have an account? Log In" : "Need an account? Switch to Sign Up";
-    };
-
-    document.getElementById('signupBtn').onclick = async () => {
-      const username = document.getElementById('authUsername').value.trim();
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value;
-
-      if (!username || !email || !password) return alert("Please fill in all fields.");
-
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        if (cred && cred.user) {
-          const profile = { name: username, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
-          await set(ref(db, `users/${cred.user.uid}`), profile);
-          userProfile = profile;
-          updateProfileUI();
-          checkUrlRoomJoin();
-        }
-      } catch (err) {
-        alert(`[SIGNUP ERROR] ${err.code || err.name}: ${err.message}`);
+  <!-- Application Logic -->
+  <script>
+    // Sample Friends Data
+    const friends = [
+      {
+        id: 'u101',
+        name: 'CardShark99',
+        avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=CardShark99',
+        status: 'IN_GAME',
+        gameDetails: { mode: 'Classic 4P', roomCode: 'X7K2' },
+        stats: { wins: 142, totalPlayed: 230, winRate: '61%' }
+      },
+      {
+        id: 'u102',
+        name: 'WildCardMaster',
+        avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=WildCardMaster',
+        status: 'ONLINE',
+        gameDetails: null,
+        stats: { wins: 89, totalPlayed: 150, winRate: '59%' }
+      },
+      {
+        id: 'u103',
+        name: 'SkipGuru',
+        avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=SkipGuru',
+        status: 'OFFLINE',
+        gameDetails: null,
+        stats: { wins: 12, totalPlayed: 45, winRate: '26%' }
       }
-    };
+    ];
 
-    document.getElementById('loginBtn').onclick = async () => {
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value;
-
-      if (!email || !password) return alert("Please enter email and password.");
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        alert(`[LOGIN ERROR] ${err.code || err.name}: ${err.message}`);
-      }
-    };
-
-    document.getElementById('logoutBtn').onclick = async () => {
-      await leaveCurrentRoom();
-      signOut(auth);
-    };
-
-    onAuthStateChanged(auth, (user) => {
-      currentUser = user;
-      if (user) {
-        const userRef = ref(db, `users/${user.uid}`);
-        onValue(userRef, async (snapshot) => {
-          if (snapshot.exists()) {
-            userProfile = snapshot.val();
-          } else {
-            userProfile = {
-              name: user.email ? user.email.split('@')[0] : "Player_" + Math.floor(1000 + Math.random() * 9000),
-              xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null
-            };
-            await set(userRef, userProfile);
-          }
-          updateProfileUI();
-          listenToFriendsData();
-          checkUrlRoomJoin();
-        });
-      } else {
-        userProfile = null;
-        showScreen('authScreen');
-      }
-    });
-
-    function updateProfileUI() {
-      if (!userProfile) return;
-      const played = userProfile.gamesPlayed || 0;
-      const wins = userProfile.gamesWon || 0;
-      const losses = Math.max(0, played - wins);
-
-      document.getElementById('profileName').innerText = userProfile.name || "Player";
-      document.getElementById('profileXP').innerText = userProfile.xp || 0;
-      document.getElementById('profileLevel').innerText = Math.floor((userProfile.xp || 0) / 1000) + 1;
-      document.getElementById('profilePlayed').innerText = played;
-      document.getElementById('profileWins').innerText = wins;
-      document.getElementById('profileLosses').innerText = losses;
-
-      let ratio = "0.00";
-      if (losses > 0) {
-        ratio = (wins / losses).toFixed(2);
-      } else if (wins > 0) {
-        ratio = wins.toFixed(2);
-      }
-
-      document.getElementById('profileRatio').innerText = ratio;
-    }
-
-    // --- URL ROOM AUTO-JOIN ENGINE ---
-    async function checkUrlRoomJoin() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const roomFromUrl = urlParams.get('room');
-
-      if (roomFromUrl && roomFromUrl.length === 6) {
-        await joinRoomByCode(roomFromUrl);
-      } else {
-        showScreen('lobbyScreen');
+    // Helper: Generate Status Badge HTML
+    function getStatusBadgeHTML(status) {
+      switch (status) {
+        case 'IN_GAME':
+          return `<span class="text-xs bg-purple-500/20 text-purple-400 border border-purple-500/40 px-2.5 py-1 rounded-full font-bold">In Match</span>`;
+        case 'ONLINE':
+          return `<span class="text-xs bg-green-500/20 text-green-400 border border-green-500/40 px-2.5 py-1 rounded-full font-bold">Online</span>`;
+        default:
+          return `<span class="text-xs bg-gray-500/20 text-gray-400 border border-gray-500/40 px-2.5 py-1 rounded-full font-bold">Offline</span>`;
       }
     }
 
-    // --- FRIENDS SYSTEM LOGIC ---
-    function listenToFriendsData() {
-      if (!currentUser) return;
+    // Helper: Get Indicator Color Dot
+    function getStatusDotClass(status) {
+      switch (status) {
+        case 'IN_GAME': return 'bg-purple-500';
+        case 'ONLINE': return 'bg-green-500';
+        default: return 'bg-gray-500';
+      }
+    }
 
-      // Pending Incoming Requests
-      onValue(ref(db, `friends/${currentUser.uid}/requests`), (snapshot) => {
-        const requests = snapshot.val() || {};
-        const container = document.getElementById('pendingRequestsList');
-        container.innerHTML = '';
+    // Render Friends List
+    function renderFriendsList() {
+      const container = document.getElementById('friends-list');
+      container.innerHTML = '';
 
-        Object.keys(requests).forEach(reqUid => {
-          const name = requests[reqUid].name;
-          const div = document.createElement('div');
-          div.className = 'friend-item';
-          div.innerHTML = `
-            <span>${name}</span>
-            <div class="friend-actions">
-              <button style="background: #4cd137;" onclick="acceptFriend('${reqUid}', '${name}')">Accept</button>
-              <button style="background: #e74c3c;" onclick="declineFriend('${reqUid}')">Decline</button>
+      friends.forEach(friend => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between bg-slate-800 hover:bg-slate-750 p-3 rounded-xl border border-slate-700/60 cursor-pointer transition';
+        
+        item.onclick = () => openProfileModal(friend);
+
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <img src="${friend.avatar}" alt="${friend.name}" class="w-11 h-11 rounded-full bg-slate-700" />
+              <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-slate-900 ${getStatusDotClass(friend.status)}"></span>
             </div>
-          `;
-          container.appendChild(div);
-        });
-
-        if (Object.keys(requests).length === 0) {
-          container.innerHTML = `<span style="font-size: 0.8rem; color: #8c96a0;">No pending requests</span>`;
-        }
-      });
-
-      // Accepted Friends List with Live Join Capabilities
-      onValue(ref(db, `friends/${currentUser.uid}/list`), (snapshot) => {
-        const friends = snapshot.val() || {};
-        const container = document.getElementById('friendsList');
-        container.innerHTML = '';
-
-        Object.keys(friends).forEach(fUid => {
-          const name = friends[fUid].name;
-          const div = document.createElement('div');
-          div.className = 'friend-item';
-          div.innerHTML = `
-            <span>${name}</span>
-            <div class="friend-actions">
-              <button style="background: #00a8ff;" onclick="joinFriendGame('${fUid}')">Join Room</button>
+            <div>
+              <p class="font-bold text-sm text-slate-100">${friend.name}</p>
+              <p class="text-xs text-slate-400">
+                ${friend.status === 'IN_GAME' ? `Playing: ${friend.gameDetails.mode}` : friend.status}
+              </p>
             </div>
-          `;
-          container.appendChild(div);
-        });
+          </div>
+          <div>${getStatusBadgeHTML(friend.status)}</div>
+        `;
 
-        if (Object.keys(friends).length === 0) {
-          container.innerHTML = `<span style="font-size: 0.8rem; color: #8c96a0;">No friends added yet</span>`;
-        }
+        container.appendChild(item);
       });
     }
 
-    document.getElementById('sendFriendReqBtn').onclick = async () => {
-      const searchName = document.getElementById('friendSearchInput').value.trim();
-      if (!searchName) return alert("Please enter a username.");
-      if (searchName === userProfile.name) return alert("You cannot add yourself.");
+    // Open Profile Modal with Selected Friend Data
+    function openProfileModal(friend) {
+      document.getElementById('modal-avatar').src = friend.avatar;
+      document.getElementById('modal-username').innerText = friend.name;
+      document.getElementById('modal-status-badge').innerHTML = getStatusBadgeHTML(friend.status);
+      document.getElementById('modal-wins').innerText = friend.stats.wins;
+      document.getElementById('modal-played').innerText = friend.stats.totalPlayed;
+      document.getElementById('modal-winrate').innerText = friend.stats.winRate;
 
-      const usersSnap = await get(ref(db, 'users'));
-      if (!usersSnap.exists()) return alert("User not found.");
+      const actionsContainer = document.getElementById('modal-actions');
+      actionsContainer.innerHTML = '';
 
-      let targetUid = null;
-      usersSnap.forEach(child => {
-        if (child.val().name === searchName) targetUid = child.key;
-      });
-
-      if (!targetUid) return alert("User not found.");
-
-      await set(ref(db, `friends/${targetUid}/requests/${currentUser.uid}`), {
-        name: userProfile.name
-      });
-
-      alert(`Friend request sent to ${searchName}!`);
-      document.getElementById('friendSearchInput').value = '';
-    };
-
-    window.acceptFriend = async (friendUid, friendName) => {
-      await set(ref(db, `friends/${currentUser.uid}/list/${friendUid}`), { name: friendName });
-      await set(ref(db, `friends/${friendUid}/list/${currentUser.uid}`), { name: userProfile.name });
-      await remove(ref(db, `friends/${currentUser.uid}/requests/${friendUid}`));
-    };
-
-    window.declineFriend = async (friendUid) => {
-      await remove(ref(db, `friends/${currentUser.uid}/requests/${friendUid}`));
-    };
-
-    window.joinFriendGame = async (friendUid) => {
-      try {
-        const friendSnap = await get(ref(db, `users/${friendUid}`));
-        if (!friendSnap.exists()) return alert("Friend user missing.");
-        
-        const friendData = friendSnap.val();
-        if (!friendData.currentRoom) return alert("This friend is not currently in a room.");
-
-        await joinRoomByCode(friendData.currentRoom);
-      } catch (err) {
-        alert("Error joining friend: " + err.message);
-      }
-    };
-
-    // --- CLEANUP AND DECK ENGINE ---
-    async function leaveCurrentRoom() {
-      if (!currentRoomCode || !currentUser) return;
-      const roomRef = ref(db, `rooms/${currentRoomCode}`);
-      try {
-        const snapshot = await get(roomRef);
-        if (snapshot.exists()) {
-          const room = snapshot.val();
-          if (room.hostId === currentUser.uid) {
-            await remove(roomRef);
-          } else {
-            await runTransaction(roomRef, (r) => {
-              if (r && r.players) r.players = r.players.filter(p => p.id !== currentUser.uid);
-              return r;
-            });
-          }
-        }
-        await update(ref(db, `users/${currentUser.uid}`), { currentRoom: null });
-      } catch (err) { console.error("Error leaving room:", err); }
-      if (roomListener) roomListener();
-      currentRoomCode = null;
-    }
-
-    async function cleanupPreviousRooms() {
-      if (!currentUser) return;
-      try {
-        const snapshot = await get(ref(db, 'rooms'));
-        if (!snapshot.exists()) return;
-        const rooms = snapshot.val();
-        for (const code in rooms) {
-          const room = rooms[code];
-          if (room.hostId === currentUser.uid) {
-            await remove(ref(db, `rooms/${code}`));
-          } else if (room.players && room.players.some(p => p.id === currentUser.uid)) {
-            await runTransaction(ref(db, `rooms/${code}`), (r) => {
-              if (r && r.players) r.players = r.players.filter(p => p.id !== currentUser.uid);
-              return r;
-            });
-          }
-        }
-        await update(ref(db, `users/${currentUser.uid}`), { currentRoom: null });
-      } catch(e) { console.warn("Cleanup warning:", e); }
-    }
-
-    function generateDeck() {
-      const colors = ['red', 'blue', 'green', 'yellow'];
-      const deck = [];
-
-      colors.forEach(color => {
-        deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: '0', points: 0 });
-        
-        for (let i = 1; i <= 9; i++) {
-          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: i.toString(), points: i });
-          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: i.toString(), points: i });
-        }
-
-        ['skip', 'reverse', 'draw2'].forEach(type => {
-          const val = SYMBOLS[type];
-          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
-          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
-        });
-      });
-
-      for (let i = 0; i < 4; i++) {
-        deck.push({ id: Math.random().toString(36).substr(2, 9), color: 'black', type: 'wild', value: SYMBOLS['wild'], points: 50 });
-        deck.push({ id: Math.random().toString(36).substr(2, 9), color: 'black', type: 'wildDraw4', value: SYMBOLS['wildDraw4'], points: 50 });
-      }
-
-      return deck.sort(() => Math.random() - 0.5);
-    }
-
-    // CREATE ROOM & JOIN HANDLERS
-    document.getElementById('createRoomBtn').onclick = async () => {
-      if (!currentUser || !userProfile || !userProfile.name) return alert("Error: User state invalid.");
-      await cleanupPreviousRooms();
-      const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const roomRef = ref(db, `rooms/${roomCode}`);
-
-      try {
-        await set(roomRef, {
-          hostId: currentUser.uid, status: "waiting", currentTurn: 0, direction: 1, currentColor: "red",
-          deck: [], discardPile: [], placements: [], notification: "",
-          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false }]
-        });
-        await update(ref(db, `users/${currentUser.uid}`), { currentRoom: roomCode });
-        onDisconnect(roomRef).remove();
-        enterRoom(roomCode);
-      } catch (err) { alert(`[CREATE ERROR] ${err.message}`); }
-    };
-
-    document.getElementById('joinRoomBtn').onclick = async () => {
-      const code = document.getElementById('roomCodeInput').value.trim();
-      await joinRoomByCode(code);
-    };
-
-    async function joinRoomByCode(code) {
-      if (!currentUser || !userProfile || !userProfile.name) return;
-      if (!code || code.length !== 6) return alert("Room code must be 6 digits.");
-
-      try {
-        const roomRef = ref(db, `rooms/${code}`);
-        const snapshot = await get(roomRef);
-        if (!snapshot.exists()) return alert(`Room "${code}" not found.`);
-        const roomData = snapshot.val();
-        if (roomData.status !== "waiting") return alert("Game already in progress.");
-        const players = roomData.players || [];
-        if (players.length >= 4 && !players.some(p => p.id === currentUser.uid)) return alert("Room is full.");
-
-        await cleanupPreviousRooms();
-        const res = await runTransaction(roomRef, (room) => {
-          if (room === null) return room;
-          if (!room.players) room.players = [];
-          const existingIdx = room.players.findIndex(p => p.id === currentUser.uid);
-          if (existingIdx !== -1) room.players[existingIdx].name = userProfile.name;
-          else room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false });
-          return room;
-        });
-
-        if (res.committed) {
-          await update(ref(db, `users/${currentUser.uid}`), { currentRoom: code });
-          enterRoom(code);
-        }
-      } catch (err) { alert(`[JOIN ERROR] ${err.message}`); }
-    }
-
-    function enterRoom(code) {
-      currentRoomCode = code;
-      showScreen('waitingScreen');
-      document.getElementById('displayRoomCode').innerText = code;
-      if (roomListener) roomListener();
-
-      roomListener = onValue(ref(db, `rooms/${code}`), (snapshot) => {
-        if (!snapshot.exists()) { alert("Room closed."); return leaveLobbyUI(); }
-        const room = snapshot.val();
-
-        if (!room.players || !room.players.some(p => p.id === room.hostId)) {
-          remove(ref(db, `rooms/${code}`));
-          alert("Host disconnected.");
-          return leaveLobbyUI();
-        }
-
-        if (room.status === "waiting") {
-          document.getElementById('waitingPlayersList').innerHTML = room.players.map(p => `
-            <div class="player-badge">${p.name} ${p.id === room.hostId ? '👑' : ''}</div>
-          `).join('');
-          
-          const isHost = room.hostId === currentUser.uid;
-          const hasEnoughPlayers = room.players.length >= 2;
-          
-          document.getElementById('copyInviteLinkBtn').style.display = isHost ? 'block' : 'none';
-          document.getElementById('startMatchBtn').style.display = (isHost && hasEnoughPlayers) ? 'block' : 'none';
-        } else if (room.status === "playing") {
-          showScreen('gameScreen');
-          renderGame(room);
-        } else if (room.status === "finished") {
-          showScreen('resultsScreen');
-          renderResults(room);
-        }
-      });
-    }
-
-    // Copy Room Link Handler
-    document.getElementById('copyInviteLinkBtn').onclick = () => {
-      const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoomCode}`;
-      navigator.clipboard.writeText(inviteUrl).then(() => {
-        alert("Invite link copied to clipboard!");
-      }).catch(err => {
-        alert("Failed to copy link: " + err);
-      });
-    };
-
-    document.getElementById('startMatchBtn').onclick = () => {
-      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
-        if (room && room.players.length >= 2) {
-          room.status = "playing";
-          const deck = generateDeck();
-          room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; p.drawnPlayableId = null; p.calledUno = false; });
-          let initialDiscard = deck.pop();
-          while (initialDiscard.color === 'black') { deck.unshift(initialDiscard); initialDiscard = deck.pop(); }
-          room.deck = deck;
-          room.discardPile = [initialDiscard];
-          room.currentColor = initialDiscard.color;
-          room.currentTurn = 0;
-          room.direction = 1;
-          room.placements = [];
-          room.notification = "Match started!";
-        }
-        return room;
-      });
-    };
-
-    document.getElementById('leaveRoomBtn').onclick = async () => {
-      await leaveCurrentRoom();
-      leaveLobbyUI();
-    };
-
-    function leaveLobbyUI() {
-      if (roomListener) roomListener();
-      currentRoomCode = null;
-      window.history.replaceState({}, document.title, window.location.pathname);
-      showScreen('lobbyScreen');
-    }
-
-    // --- GAME RENDERING ENGINE ---
-    function renderCardHTML(card, extraClasses = "") {
-      const displayVal = card.value;
-      return `
-        <div class="uno-card ${card.color} ${extraClasses}">
-          <span class="corner-symbol top-left">${displayVal}</span>
-          <span class="card-value">${displayVal}</span>
-          <span class="corner-symbol bottom-right">${displayVal}</span>
-        </div>
-      `;
-    }
-
-    function renderGame(room) {
-      document.getElementById('gameRoomCode').innerText = currentRoomCode;
-      document.getElementById('deckCount').innerText = room.deck ? room.deck.length : 0;
-      
-      const banner = document.getElementById('announcementBanner');
-      if (room.notification) {
-        banner.innerText = room.notification;
-        banner.style.display = 'block';
+      if (friend.status === 'IN_GAME') {
+        actionsContainer.innerHTML = `
+          <button class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition">
+            <i data-lucide="eye" class="w-4 h-4"></i> Spectate Match
+          </button>
+        `;
+      } else if (friend.status === 'ONLINE') {
+        actionsContainer.innerHTML = `
+          <button class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition">
+            <i data-lucide="play" class="w-4 h-4"></i> Invite to Match
+          </button>
+        `;
       } else {
-        banner.style.display = 'none';
+        actionsContainer.innerHTML = `
+          <p class="text-xs text-slate-500 italic py-2">User is currently offline</p>
+        `;
       }
 
-      const activeColorEl = document.getElementById('activeColorDisplay');
-      activeColorEl.innerText = room.currentColor.toUpperCase();
-      const colorHex = { red: '#e84118', blue: '#00a8ff', green: '#4cd137', yellow: '#fbc531' };
-      activeColorEl.style.color = colorHex[room.currentColor] || '#fbc531';
+      document.getElementById('profile-modal').classList.remove('hidden');
+      document.getElementById('profile-modal').classList.add('flex');
 
-      const topCard = room.discardPile[room.discardPile.length - 1];
-      document.getElementById('topCardDisplay').innerHTML = renderCardHTML(topCard);
-
-      document.getElementById('gamePlayersList').innerHTML = room.players.map((p, idx) => `
-        <div class="player-badge ${idx === room.currentTurn ? 'active-turn' : ''}">
-          ${p.name} (${p.hand ? p.hand.length : 0} cards) ${p.calledUno ? '⚡UNO' : ''}
-        </div>
-      `).join('');
-
-      const myData = room.players.find(p => p.id === currentUser.uid);
-      const isMyTurn = room.players[room.currentTurn].id === currentUser.uid;
-
-      const unoBtn = document.getElementById('callUnoBtn');
-      if (myData && myData.calledUno) {
-        unoBtn.classList.add('active');
-        unoBtn.innerText = "UNO CALLED!";
-      } else {
-        unoBtn.classList.remove('active');
-        unoBtn.innerText = "SAY UNO!";
-      }
-
-      const passBtn = document.getElementById('passTurnBtn');
-      if (isMyTurn && myData && myData.drawnPlayableId !== null && myData.drawnPlayableId !== undefined) {
-        passBtn.style.display = 'inline-block';
-      } else {
-        passBtn.style.display = 'none';
-      }
-
-      const handContainer = document.getElementById('playerHand');
-      handContainer.innerHTML = '';
-
-      if (myData && myData.hand && !myData.out) {
-        myData.hand.forEach((card, idx) => {
-          const wrapper = document.createElement('div');
-          const isPlayableDrawn = myData.drawnPlayableId === card.id;
-          wrapper.innerHTML = renderCardHTML(card, isPlayableDrawn ? "playable-draw" : "");
-          const cardEl = wrapper.firstElementChild;
-          cardEl.onclick = () => handleCardClick(idx, room);
-          handContainer.appendChild(cardEl);
-        });
-      }
+      // Re-initialize dynamic icons inside modal
+      lucide.createIcons();
     }
 
-    function isCardValid(card, room) {
-      const topCard = room.discardPile[room.discardPile.length - 1];
-      return card.color === 'black' || card.color === room.currentColor || card.value === topCard.value;
-    }
-
-    function handleCardClick(cardIndex, room) {
-      const myIndex = room.players.findIndex(p => p.id === currentUser.uid);
-      if (room.currentTurn !== myIndex) return alert("Not your turn!");
-
-      const card = room.players[myIndex].hand[cardIndex];
-
-      if (!isCardValid(card, room)) {
-        return alert("This card cannot be played! Match color, value, or play a Wild.");
-      }
-
-      if (card.color === 'black') {
-        pendingWildCardIndex = cardIndex;
-        document.getElementById('colorModal').style.display = 'flex';
-      } else {
-        playCard(cardIndex, card.color);
-      }
-    }
-
-    window.selectWildColor = (color) => {
-      document.getElementById('colorModal').style.display = 'none';
-      if (pendingWildCardIndex !== null) {
-        playCard(pendingWildCardIndex, color);
-        pendingWildCardIndex = null;
-      }
+    // Close Modal Handler
+    document.getElementById('close-modal-btn').onclick = () => {
+      document.getElementById('profile-modal').classList.add('hidden');
+      document.getElementById('profile-modal').classList.remove('flex');
     };
 
-    window.callUno = () => {
-      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
-        if (!room) return room;
-        const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
-        
-        if (myIdx !== -1 && room.players[myIdx].hand.length === 1) {
-          room.players[myIdx].calledUno = true;
-          room.notification = `${room.players[myIdx].name} called UNO!`;
-        } else {
-          room.notification = "You can only call UNO when you have exactly 1 card left!";
-        }
-        return room;
-      });
-    };
-
-    window.passTurn = () => {
-      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
-        if (!room) return room;
-        const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
-        if (myIdx !== room.currentTurn) return room;
-
-        const player = room.players[myIdx];
-        player.drawnPlayableId = null;
-        room.notification = `${player.name} passed their turn.`;
-
-        checkUnoPenaltyAndAdvance(room, 1);
-        return room;
-      });
-    };
-
-    function checkUnoPenaltyAndAdvance(room, step = 1) {
-      const currentPlayer = room.players[room.currentTurn];
-
-      if (currentPlayer.hand.length === 1 && !currentPlayer.calledUno) {
-        drawCards(room, room.currentTurn, 2);
-        room.notification = `Penalty! ${currentPlayer.name} forgot to say UNO (+2 Cards)!`;
-      }
-
-      if (currentPlayer.hand.length !== 1) {
-        currentPlayer.calledUno = false;
-      }
-
-      advanceTurn(room, step);
-    }
-
-    function playCard(cardIndex, chosenColor) {
-      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
-        if (!room) return room;
-
-        if (!room.placements) {
-          room.placements = [];
-        }
-
-        const player = room.players[room.currentTurn];
-        const card = player.hand.splice(cardIndex, 1)[0];
-
-        player.drawnPlayableId = null;
-        room.discardPile.push(card);
-        room.currentColor = chosenColor;
-        room.notification = "";
-
-        let turnStep = 1;
-
-        if (card.type === 'skip') {
-          turnStep = 2;
-        } 
-        else if (card.type === 'reverse') {
-          const activeCount = room.players.filter(p => !p.out).length;
-          if (activeCount === 2) {
-            turnStep = 2;
-          } else {
-            room.direction *= -1;
-          }
-        } 
-        else if (card.type === 'draw2') {
-          const targetPlayerIdx = getNextPlayerIndex(room, room.currentTurn, 1);
-          drawCards(room, targetPlayerIdx, 2);
-          turnStep = 2;
-        } 
-        else if (card.type === 'wildDraw4') {
-          const targetPlayerIdx = getNextPlayerIndex(room, room.currentTurn, 1);
-          drawCards(room, targetPlayerIdx, 4);
-          turnStep = 2;
-        }
-
-        if (player.hand.length === 0) {
-          player.out = true;
-          room.placements.push({ id: player.id, name: player.name, place: room.placements.length + 1 });
-        }
-
-        const active = room.players.filter(p => !p.out);
-        if (active.length <= 1) {
-          active.forEach(p => {
-            p.out = true;
-            room.placements.push({ id: p.id, name: p.name, place: room.placements.length + 1 });
-          });
-          room.status = "finished";
-          calculateXP(room);
-        } else {
-          checkUnoPenaltyAndAdvance(room, turnStep);
-        }
-
-        return room;
-      });
-    }
-
-    window.handleDrawClick = () => {
-      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
-        if (!room) return room;
-        const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
-        if (myIdx !== room.currentTurn) return room;
-
-        const player = room.players[myIdx];
-        if (player.drawnPlayableId !== null && player.drawnPlayableId !== undefined) {
-          return room;
-        }
-
-        const drawnCard = drawCards(room, myIdx, 1)[0];
-
-        if (drawnCard && isCardValid(drawnCard, room)) {
-          player.drawnPlayableId = drawnCard.id;
-          room.notification = `${player.name} drew a playable card! Choose to play or pass.`;
-        } else {
-          player.drawnPlayableId = null;
-          room.notification = `${player.name} drew a card. Turn passed.`;
-          checkUnoPenaltyAndAdvance(room, 1);
-        }
-        return room;
-      });
-    };
-
-    function drawCards(room, playerIdx, count) {
-      const drawnList = [];
-      for (let i = 0; i < count; i++) {
-        if (!room.deck || room.deck.length === 0) {
-          if (room.discardPile.length > 1) {
-            const top = room.discardPile.pop();
-            room.deck = room.discardPile.sort(() => Math.random() - 0.5);
-            room.discardPile = [top];
-          }
-        }
-        if (room.deck && room.deck.length > 0) {
-          const card = room.deck.pop();
-          room.players[playerIdx].hand.push(card);
-          drawnList.push(card);
-        }
-      }
-      return drawnList;
-    }
-
-    function getNextPlayerIndex(room, current, step = 1) {
-      let count = 0;
-      let target = current;
-      while (count < step) {
-        target = (target + room.direction + room.players.length) % room.players.length;
-        if (!room.players[target].out) count++;
-      }
-      return target;
-    }
-
-    function advanceTurn(room, step = 1) {
-      room.currentTurn = getNextPlayerIndex(room, room.currentTurn, step);
-    }
-
-    function calculateXP(room) {
-      const handPoints = {};
-      room.players.forEach(p => {
-        handPoints[p.id] = (p.hand || []).reduce((a, b) => a + (b.points || 0), 0);
-      });
-
-      room.finalResults = room.players.map(player => {
-        const placementEntry = room.placements.find(p => p.id === player.id);
-        const place = placementEntry ? placementEntry.place : room.players.length;
-
-        let baseXP = 25;
-        let bonusXP = 0;
-
-        if (place === 1) {
-          baseXP = 100;
-          bonusXP = Object.values(handPoints).reduce((a, b) => a + b, 0);
-        } else if (place === 2) {
-          baseXP = 50;
-        } else if (place === 3) {
-          baseXP = 35;
-        }
-
-        return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
-      });
-
-      room.finalResults.forEach(res => {
-        runTransaction(ref(db, `users/${res.id}`), (u) => {
-          if (!u) return u;
-          u.gamesPlayed = (u.gamesPlayed || 0) + 1;
-          
-          if (res.place === 1) {
-            u.gamesWon = (u.gamesWon || 0) + 1;
-          }
-
-          u.xp = (u.xp || 0) + res.totalXP;
-          u.level = Math.floor(u.xp / 1000) + 1;
-          return u;
-        });
-      });
-    }
-
-    function renderResults(room) {
-      if (!room.finalResults) return;
-      document.getElementById('resultsTableBody').innerHTML = room.finalResults.map(r => `
-        <tr>
-          <td>#${r.place}</td>
-          <td>${r.name}</td>
-          <td>${r.baseXP}</td>
-          <td>${r.bonusXP}</td>
-          <td><strong>+${r.totalXP} XP</strong></td>
-        </tr>
-      `).join('');
-    }
-
-    document.getElementById('returnLobbyBtn').onclick = async () => {
-      await leaveCurrentRoom();
-      leaveLobbyUI();
-    };
-
-    function showScreen(id) {
-      ['authScreen', 'lobbyScreen', 'waitingScreen', 'gameScreen', 'resultsScreen'].forEach(s => {
-        document.getElementById(s).style.display = s === id ? 'block' : 'none';
-      });
-    }
+    // Initial render and Icon initialize
+    renderFriendsList();
+    lucide.createIcons();
   </script>
 </body>
 </html>
