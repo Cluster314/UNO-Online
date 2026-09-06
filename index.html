@@ -136,7 +136,8 @@
       <div>XP: <strong id="profileXP">0</strong></div>
       <div>Played: <strong id="profilePlayed">0</strong></div>
       <div>Wins: <strong id="profileWins">0</strong></div>
-      <div>W/L: <strong id="profileRatio">0.00</strong></div>
+      <div>Losses: <strong id="profileLosses">0</strong></div>
+      <div>W/L Ratio: <strong id="profileRatio">0.00</strong></div>
     </div>
 
     <div class="lobby-controls">
@@ -330,12 +331,24 @@
 
     function updateProfileUI() {
       if (!userProfile) return;
+      const played = userProfile.gamesPlayed || 0;
+      const wins = userProfile.gamesWon || 0;
+      const losses = Math.max(0, played - wins);
+
       document.getElementById('profileName').innerText = userProfile.name || "Player";
       document.getElementById('profileXP').innerText = userProfile.xp || 0;
       document.getElementById('profileLevel').innerText = Math.floor((userProfile.xp || 0) / 1000) + 1;
-      document.getElementById('profilePlayed').innerText = userProfile.gamesPlayed || 0;
-      document.getElementById('profileWins').innerText = userProfile.gamesWon || 0;
-      const ratio = userProfile.gamesPlayed > 0 ? (userProfile.gamesWon / userProfile.gamesPlayed).toFixed(2) : "0.00";
+      document.getElementById('profilePlayed').innerText = played;
+      document.getElementById('profileWins').innerText = wins;
+      document.getElementById('profileLosses').innerText = losses;
+
+      let ratio = "0.00";
+      if (losses > 0) {
+        ratio = (wins / losses).toFixed(2);
+      } else if (wins > 0) {
+        ratio = wins.toFixed(2);
+      }
+
       document.getElementById('profileRatio').innerText = ratio;
     }
 
@@ -626,11 +639,13 @@
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
         const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
-        if (myIdx !== -1 && room.players[myIdx].hand.length <= 2) {
+        
+        // Strict Check: Exactly 1 card left in hand
+        if (myIdx !== -1 && room.players[myIdx].hand.length === 1) {
           room.players[myIdx].calledUno = true;
           room.notification = `${room.players[myIdx].name} called UNO!`;
         } else {
-          room.notification = "You can only call UNO when you have 1 or 2 cards!";
+          room.notification = "You can only call UNO when you have exactly 1 card left!";
         }
         return room;
       });
@@ -654,7 +669,7 @@
     function checkUnoPenaltyAndAdvance(room, step = 1) {
       const currentPlayer = room.players[room.currentTurn];
 
-      // AUTOMATED UNO PENALTY CHECK
+      // AUTOMATED UNO PENALTY CHECK (Must have exactly 1 card and NOT have called UNO)
       if (currentPlayer.hand.length === 1 && !currentPlayer.calledUno) {
         drawCards(room, room.currentTurn, 2);
         room.notification = `Penalty! ${currentPlayer.name} forgot to say UNO (+2 Cards)!`;
@@ -811,11 +826,16 @@
         return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
       });
 
+      // Strict Win Recording Fix
       room.finalResults.forEach(res => {
         runTransaction(ref(db, `users/${res.id}`), (u) => {
           if (!u) return u;
           u.gamesPlayed = (u.gamesPlayed || 0) + 1;
-          if (res.place === 1) u.gamesWon = (u.gamesWon || 0) + 1;
+          
+          if (res.place === 1) {
+            u.gamesWon = (u.gamesWon || 0) + 1;
+          }
+
           u.xp = (u.xp || 0) + res.totalXP;
           u.level = Math.floor(u.xp / 1000) + 1;
           return u;
