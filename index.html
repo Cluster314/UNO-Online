@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Online UNO - Account System</title>
   
-  <!-- Inline SVG Favicon (UNO Card Icon) -->
+  <!-- Inline SVG Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e74c3c'/><path d='M20 80 L80 20 L80 80 Z' fill='%23f1c40f'/><circle cx='50' cy='50' r='25' fill='%233498db'/><text x='50' y='58' font-size='22' font-weight='bold' font-family='sans-serif' text-anchor='middle' fill='white'>UNO</text></svg>">
 
   <style>
@@ -150,15 +150,16 @@
     <button id="returnLobbyBtn" style="margin-top: 25px; background: #27ae60;">Return to Lobby</button>
   </div>
 
-  <!-- FIREBASE & GAME ENGINE -->
+  <!-- FIREBASE ENGINE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-    import { getDatabase, ref, set, get, onValue, update, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+    import { getDatabase, ref, set, get, onValue, update, remove, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBQXUIUCuy7h3SkMUAnP5WF4P9JjfeDkUQ",
       authDomain: "uno-online-f96fc.firebaseapp.com",
+      databaseURL: "https://uno-online-f96fc-default-rtdb.firebaseio.com",
       projectId: "uno-online-f96fc",
       storageBucket: "uno-online-f96fc.firebasestorage.app",
       messagingSenderId: "367230905261",
@@ -196,13 +197,17 @@
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         if (cred && cred.user) {
-          await set(ref(db, `users/${cred.user.uid}`), {
+          const profile = {
             name: username,
             xp: 0,
             level: 1,
             gamesPlayed: 0,
             gamesWon: 0
-          });
+          };
+          await set(ref(db, `users/${cred.user.uid}`), profile);
+          userProfile = profile;
+          updateProfileUI();
+          showScreen('lobbyScreen');
         }
       } catch (err) {
         alert(err.message);
@@ -222,9 +227,11 @@
       }
     };
 
-    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+    document.getElementById('logoutBtn').onclick = async () => {
+      await leaveCurrentRoom();
+      signOut(auth);
+    };
 
-    // Auto-Recovery for profiles missing in Realtime Database
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       if (user) {
@@ -262,6 +269,61 @@
       document.getElementById('profileRatio').innerText = ratio;
     }
 
+    // --- ROOM CLEANUP AND LEAVING LOGIC ---
+    async function leaveCurrentRoom() {
+      if (!currentRoomCode || !currentUser) return;
+
+      const code = currentRoomCode;
+      const roomRef = ref(db, `rooms/${code}`);
+
+      try {
+        const snapshot = await get(roomRef);
+        if (snapshot.exists()) {
+          const room = snapshot.val();
+
+          // If current user is the host, delete the whole room
+          if (room.hostId === currentUser.uid) {
+            await remove(roomRef);
+          } else {
+            // Remove user from the players list
+            await runTransaction(roomRef, (currentRoom) => {
+              if (currentRoom && currentRoom.players) {
+                currentRoom.players = currentRoom.players.filter(p => p.id !== currentUser.uid);
+              }
+              return currentRoom;
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error leaving room:", err);
+      }
+
+      if (roomListener) roomListener();
+      currentRoomCode = null;
+    }
+
+    async function cleanupPreviousRooms() {
+      if (!currentUser) return;
+      const roomsRef = ref(db, 'rooms');
+      const snapshot = await get(roomsRef);
+      if (!snapshot.exists()) return;
+
+      const rooms = snapshot.val();
+      for (const code in rooms) {
+        const room = rooms[code];
+        if (room.hostId === currentUser.uid) {
+          await remove(ref(db, `rooms/${code}`));
+        } else if (room.players && room.players.some(p => p.id === currentUser.uid)) {
+          await runTransaction(ref(db, `rooms/${code}`), (r) => {
+            if (r && r.players) {
+              r.players = r.players.filter(p => p.id !== currentUser.uid);
+            }
+            return r;
+          });
+        }
+      }
+    }
+
     // --- DECK CREATION ---
     function generateDeck() {
       const colors = ['red', 'blue', 'green', 'yellow'];
@@ -285,8 +347,12 @@
     document.getElementById('createRoomBtn').onclick = async () => {
       if (!userProfile || !userProfile.name) return alert("Profile loading... please try again in a moment.");
 
+      await cleanupPreviousRooms();
+
       const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
-      await set(ref(db, `rooms/${roomCode}`), {
+      const roomRef = ref(db, `rooms/${roomCode}`);
+
+      await set(roomRef, {
         hostId: currentUser.uid,
         status: "waiting",
         currentTurn: 0,
@@ -298,6 +364,10 @@
         pendingDrawCount: 0,
         players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false }]
       });
+
+      // Auto-delete room if host disconnects abruptly
+      onDisconnect(roomRef).remove();
+
       enterRoom(roomCode);
     };
 
@@ -307,17 +377,33 @@
       const code = document.getElementById('roomCodeInput').value.trim();
       if (code.length !== 6) return alert("Room code must be 6 digits.");
 
-      const res = await runTransaction(ref(db, `rooms/${code}`), (room) => {
-        if (!room || room.status !== "waiting" || room.players.length >= 4) return;
-        if (!room.players.find(p => p.id === currentUser.uid)) {
+      await cleanupPreviousRooms();
+
+      const roomRef = ref(db, `rooms/${code}`);
+      const snapshot = await get(roomRef);
+
+      if (!snapshot.exists()) return alert("Room code does not exist!");
+
+      const roomData = snapshot.val();
+      if (roomData.status !== "waiting") return alert("Game already started or finished.");
+      if (roomData.players && roomData.players.length >= 4) return alert("Room is full.");
+
+      const res = await runTransaction(roomRef, (room) => {
+        if (!room) return room;
+        if (!room.players) room.players = [];
+
+        const exists = room.players.some(p => p.id === currentUser.uid);
+        if (!exists) {
           room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false });
         }
-        if (room.players.length === 4) startMatch(room);
         return room;
       });
 
-      if (res.committed && res.snapshot.exists()) enterRoom(code);
-      else alert("Room full, playing, or invalid.");
+      if (res.committed) {
+        enterRoom(code);
+      } else {
+        alert("Failed to join room.");
+      }
     };
 
     function enterRoom(code) {
@@ -326,9 +412,25 @@
       document.getElementById('displayRoomCode').innerText = code;
 
       if (roomListener) roomListener();
+
       roomListener = onValue(ref(db, `rooms/${code}`), (snapshot) => {
+        // Handle Host Deletion or Missing Room
+        if (!snapshot.exists()) {
+          alert("The room host has left or closed the room.");
+          leaveLobbyUI();
+          return;
+        }
+
         const room = snapshot.val();
-        if (!room) return leaveLobby();
+
+        // Verify Host presence
+        const hostExists = room.players && room.players.some(p => p.id === room.hostId);
+        if (!hostExists) {
+          remove(ref(db, `rooms/${code}`));
+          alert("Host left the room. Room destroyed.");
+          leaveLobbyUI();
+          return;
+        }
 
         if (room.status === "waiting") {
           document.getElementById('waitingPlayersList').innerHTML = room.players.map(p => `
@@ -367,14 +469,18 @@
       room.pendingDrawCount = 0;
     }
 
-    document.getElementById('leaveRoomBtn').onclick = leaveLobby;
-    function leaveLobby() {
+    document.getElementById('leaveRoomBtn').onclick = async () => {
+      await leaveCurrentRoom();
+      leaveLobbyUI();
+    };
+
+    function leaveLobbyUI() {
       if (roomListener) roomListener();
       currentRoomCode = null;
       showScreen('lobbyScreen');
     }
 
-    // --- GAMEPLAY ---
+    // --- GAMEPLAY LOGIC ---
     function renderGame(room) {
       document.getElementById('gameRoomCode').innerText = currentRoomCode;
       document.getElementById('activeColorDisplay').innerText = room.currentColor.toUpperCase();
@@ -534,7 +640,6 @@
         return { id: entry.id, name: entry.name, place: entry.place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
       });
 
-      // Save XP & stats directly to user accounts
       room.finalResults.forEach(res => {
         runTransaction(ref(db, `users/${res.id}`), (u) => {
           if (!u) return u;
@@ -560,7 +665,10 @@
       `).join('');
     }
 
-    document.getElementById('returnLobbyBtn').onclick = leaveLobby;
+    document.getElementById('returnLobbyBtn').onclick = async () => {
+      await leaveCurrentRoom();
+      leaveLobbyUI();
+    };
 
     function showScreen(id) {
       ['authScreen', 'lobbyScreen', 'waitingScreen', 'gameScreen', 'resultsScreen'].forEach(s => {
