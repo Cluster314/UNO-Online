@@ -253,7 +253,7 @@
   <!-- FIREBASE ENGINE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-    import { getDatabase, ref, set, get, onValue, remove, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update, onValue, remove, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -305,7 +305,7 @@
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         if (cred && cred.user) {
-          const profile = { name: username, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0 };
+          const profile = { name: username, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
           await set(ref(db, `users/${cred.user.uid}`), profile);
           userProfile = profile;
           updateProfileUI();
@@ -344,7 +344,7 @@
           } else {
             userProfile = {
               name: user.email ? user.email.split('@')[0] : "Player_" + Math.floor(1000 + Math.random() * 9000),
-              xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0
+              xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null
             };
             await set(userRef, userProfile);
           }
@@ -422,7 +422,7 @@
         }
       });
 
-      // Accepted Friends List
+      // Accepted Friends List with Live Join Capabilities
       onValue(ref(db, `friends/${currentUser.uid}/list`), (snapshot) => {
         const friends = snapshot.val() || {};
         const container = document.getElementById('friendsList');
@@ -432,7 +432,12 @@
           const name = friends[fUid].name;
           const div = document.createElement('div');
           div.className = 'friend-item';
-          div.innerHTML = `<span>${name}</span>`;
+          div.innerHTML = `
+            <span>${name}</span>
+            <div class="friend-actions">
+              <button style="background: #00a8ff;" onclick="joinFriendGame('${fUid}')">Join Room</button>
+            </div>
+          `;
           container.appendChild(div);
         });
 
@@ -475,6 +480,20 @@
       await remove(ref(db, `friends/${currentUser.uid}/requests/${friendUid}`));
     };
 
+    window.joinFriendGame = async (friendUid) => {
+      try {
+        const friendSnap = await get(ref(db, `users/${friendUid}`));
+        if (!friendSnap.exists()) return alert("Friend user missing.");
+        
+        const friendData = friendSnap.val();
+        if (!friendData.currentRoom) return alert("This friend is not currently in a room.");
+
+        await joinRoomByCode(friendData.currentRoom);
+      } catch (err) {
+        alert("Error joining friend: " + err.message);
+      }
+    };
+
     // --- CLEANUP AND DECK ENGINE ---
     async function leaveCurrentRoom() {
       if (!currentRoomCode || !currentUser) return;
@@ -492,6 +511,7 @@
             });
           }
         }
+        await update(ref(db, `users/${currentUser.uid}`), { currentRoom: null });
       } catch (err) { console.error("Error leaving room:", err); }
       if (roomListener) roomListener();
       currentRoomCode = null;
@@ -514,6 +534,7 @@
             });
           }
         }
+        await update(ref(db, `users/${currentUser.uid}`), { currentRoom: null });
       } catch(e) { console.warn("Cleanup warning:", e); }
     }
 
@@ -557,6 +578,7 @@
           deck: [], discardPile: [], placements: [], notification: "",
           players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false }]
         });
+        await update(ref(db, `users/${currentUser.uid}`), { currentRoom: roomCode });
         onDisconnect(roomRef).remove();
         enterRoom(roomCode);
       } catch (err) { alert(`[CREATE ERROR] ${err.message}`); }
@@ -590,7 +612,10 @@
           return room;
         });
 
-        if (res.committed) enterRoom(code);
+        if (res.committed) {
+          await update(ref(db, `users/${currentUser.uid}`), { currentRoom: code });
+          enterRoom(code);
+        }
       } catch (err) { alert(`[JOIN ERROR] ${err.message}`); }
     }
 
@@ -668,7 +693,6 @@
     function leaveLobbyUI() {
       if (roomListener) roomListener();
       currentRoomCode = null;
-      // Clean room parameter out of URL when leaving back to lobby
       window.history.replaceState({}, document.title, window.location.pathname);
       showScreen('lobbyScreen');
     }
@@ -781,7 +805,6 @@
         if (!room) return room;
         const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
         
-        // Strict Check: Exactly 1 card left in hand
         if (myIdx !== -1 && room.players[myIdx].hand.length === 1) {
           room.players[myIdx].calledUno = true;
           room.notification = `${room.players[myIdx].name} called UNO!`;
