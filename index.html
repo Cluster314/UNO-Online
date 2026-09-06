@@ -26,47 +26,19 @@
     .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .join-group { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 320px; }
 
-    .waiting-actions {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 12px;
-      margin-top: 20px;
-      width: 100%;
-      max-width: 450px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .waiting-actions button {
-      flex: 1;
-      margin: 0;
-    }
+    .waiting-actions { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 20px auto 0 auto; width: 100%; max-width: 450px; }
+    .waiting-actions button { flex: 1; margin: 0; }
 
     .game-header { display: flex; justify-content: space-between; align-items: center; background: #2f3640; padding: 14px 24px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
-    .table-area { display: flex; justify-content: center; align-items: center; gap: 50px; margin: 25px 0; background: radial-gradient(circle, #273c75 0%, #192a56 100%); padding: 30px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.1); }
+    .table-area { display: flex; justify-content: center; align-items: center; gap: 40px; margin: 20px 0; background: radial-gradient(circle, #273c75 0%, #192a56 100%); padding: 25px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.1); }
     
     .uno-card {
-      width: 90px;
-      height: 135px;
-      border-radius: 10px;
-      border: 4px solid #ffffff;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-      background: #111;
-      overflow: hidden;
+      width: 90px; height: 135px; border-radius: 10px; border: 4px solid #ffffff;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4); position: relative; display: flex;
+      justify-content: center; align-items: center; cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease; background: #111; overflow: hidden;
     }
-
-    .uno-card:hover {
-      transform: translateY(-10px) scale(1.05);
-      box-shadow: 0 12px 24px rgba(0,0,0,0.6);
-      z-index: 10;
-    }
-
+    .uno-card:hover { transform: translateY(-10px) scale(1.05); box-shadow: 0 12px 24px rgba(0,0,0,0.6); z-index: 10; }
     .uno-card.red { background-color: #e84118; }
     .uno-card.blue { background-color: #00a8ff; }
     .uno-card.green { background-color: #4cd137; }
@@ -74,85 +46,28 @@
     .uno-card.black { background-color: #2f3640; }
 
     .uno-card::before {
-      content: '';
-      position: absolute;
-      width: 70px;
-      height: 110px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.95);
-      transform: rotate(-25deg);
-      box-shadow: inset 0 0 8px rgba(0,0,0,0.15);
+      content: ''; position: absolute; width: 70px; height: 110px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.95); transform: rotate(-25deg); box-shadow: inset 0 0 8px rgba(0,0,0,0.15);
     }
+    .uno-card.black::before { background: conic-gradient(#e84118 0deg 90deg, #00a8ff 90deg 180deg, #4cd137 180deg 270deg, #fbc531 270deg 360deg); }
 
-    .uno-card.black::before {
-      background: conic-gradient(#e84118 0deg 90deg, #00a8ff 90deg 180deg, #4cd137 180deg 270deg, #fbc531 270deg 360deg);
-    }
+    .uno-card .card-value { position: relative; z-index: 2; font-size: 2.2rem; font-weight: 900; font-style: italic; color: #2f3640; text-shadow: 2px 2px 0px rgba(255,255,255,0.8), -1px -1px 0px rgba(0,0,0,0.2); }
+    .uno-card.black .card-value { color: #ffffff; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
 
-    .uno-card .card-value {
-      position: relative;
-      z-index: 2;
-      font-size: 2.2rem;
-      font-weight: 900;
-      font-style: italic;
-      color: #2f3640;
-      text-shadow: 2px 2px 0px rgba(255,255,255,0.8), -1px -1px 0px rgba(0,0,0,0.2);
-    }
-    .uno-card.black .card-value {
-      color: #ffffff;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-    }
-
-    .uno-card .corner-symbol {
-      position: absolute;
-      font-size: 0.75rem;
-      font-weight: bold;
-      color: #ffffff;
-      z-index: 3;
-    }
+    .uno-card .corner-symbol { position: absolute; font-size: 0.75rem; font-weight: bold; color: #ffffff; z-index: 3; }
     .uno-card .corner-symbol.top-left { top: 4px; left: 6px; }
     .uno-card .corner-symbol.bottom-right { bottom: 4px; right: 6px; transform: rotate(180deg); }
 
-    .uno-card-back {
-      background: linear-gradient(135deg, #2c3e50, #000000);
-      border: 4px solid #ffffff;
-    }
-    .uno-card-back::before {
-      content: '';
-      position: absolute;
-      width: 70px;
-      height: 110px;
-      border-radius: 50%;
-      background: #e74c3c;
-      transform: rotate(-25deg);
-    }
-    .uno-card-back .logo {
-      position: relative;
-      z-index: 2;
-      font-weight: 900;
-      font-style: italic;
-      color: #f1c40f;
-      font-size: 1.1rem;
-      text-shadow: 2px 2px 0 #000;
-      transform: rotate(-15deg);
-    }
+    .uno-card-back { background: linear-gradient(135deg, #2c3e50, #000000); border: 4px solid #ffffff; }
+    .uno-card-back::before { content: ''; position: absolute; width: 70px; height: 110px; border-radius: 50%; background: #e74c3c; transform: rotate(-25deg); }
+    .uno-card-back .logo { position: relative; z-index: 2; font-weight: 900; font-style: italic; color: #f1c40f; font-size: 1.1rem; text-shadow: 2px 2px 0 #000; transform: rotate(-15deg); }
 
     @keyframes pulseGlow {
       0% { box-shadow: 0 0 10px #f1c40f, 0 6px 16px rgba(0,0,0,0.4); transform: scale(1); }
       50% { box-shadow: 0 0 25px #f1c40f, 0 10px 20px rgba(0,0,0,0.6); transform: scale(1.08); }
       100% { box-shadow: 0 0 10px #f1c40f, 0 6px 16px rgba(0,0,0,0.4); transform: scale(1); }
     }
-    .uno-card.playable-draw {
-      animation: pulseGlow 1.2s infinite;
-      border-color: #f1c40f;
-    }
-
-    @keyframes drawCardAnim {
-      0% { opacity: 0; transform: translateY(-50px) scale(0.5); }
-      100% { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .draw-animation {
-      animation: drawCardAnim 0.35s ease-out forwards;
-    }
+    .uno-card.playable-draw { animation: pulseGlow 1.2s infinite; border-color: #f1c40f; }
 
     .hand-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 15px; min-height: 160px; padding: 15px; background: #192a56; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
 
@@ -164,18 +79,18 @@
     .color-picker { background: #2f3640; padding: 24px; border-radius: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border: 2px solid #353b48; }
     .color-btn { width: 90px; height: 90px; border-radius: 12px; border: 3px solid #fff; cursor: pointer; transition: transform 0.2s; }
     .color-btn:hover { transform: scale(1.1); }
-    
+
+    .action-bar { display: flex; justify-content: center; gap: 12px; margin-top: 10px; }
+    .action-bar button { width: auto; min-width: 130px; margin: 0; }
+    .uno-btn { background: #fbc531; color: #2c3e50; }
+    .uno-btn.active { background: #4cd137; color: white; }
+
+    .announcement-banner { background: #eb4d4b; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; margin-bottom: 12px; display: none; }
+
     .results-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     .results-table th, .results-table td { padding: 12px; border: 1px solid #353b48; text-align: center; }
 
-    .game-credits {
-      margin-top: 25px;
-      font-size: 0.75rem;
-      color: #8c96a0;
-      line-height: 1.4;
-      border-top: 1px solid rgba(255,255,255,0.08);
-      padding-top: 12px;
-    }
+    .game-credits { margin-top: 25px; font-size: 0.75rem; color: #8c96a0; line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
   </style>
 </head>
 <body>
@@ -256,6 +171,8 @@
 
   <!-- GAME SCREEN -->
   <div id="gameScreen" class="screen" style="display: none;">
+    <div id="announcementBanner" class="announcement-banner"></div>
+
     <div class="game-header">
       <div>Room: <strong id="gameRoomCode">------</strong></div>
       <div>Active Color: <strong id="activeColorDisplay" style="color:#fbc531">RED</strong></div>
@@ -273,6 +190,11 @@
         <p style="font-size: 0.75rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px;">DISCARD PILE</p>
         <div id="topCardDisplay"></div>
       </div>
+    </div>
+
+    <div class="action-bar">
+      <button id="callUnoBtn" class="uno-btn" onclick="callUno()">SAY UNO!</button>
+      <button id="passTurnBtn" style="background: #e67e22; display: none;" onclick="passTurn()">Pass Turn</button>
     </div>
 
     <h3>Your Hand</h3>
@@ -496,8 +418,8 @@
       try {
         await set(roomRef, {
           hostId: currentUser.uid, status: "waiting", currentTurn: 0, direction: 1, currentColor: "red",
-          deck: [], discardPile: [], placements: [],
-          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null }]
+          deck: [], discardPile: [], placements: [], notification: "",
+          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false }]
         });
         onDisconnect(roomRef).remove();
         enterRoom(roomCode);
@@ -524,7 +446,7 @@
           if (!room.players) room.players = [];
           const existingIdx = room.players.findIndex(p => p.id === currentUser.uid);
           if (existingIdx !== -1) room.players[existingIdx].name = userProfile.name;
-          else room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null });
+          else room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false });
           return room;
         });
 
@@ -571,7 +493,7 @@
         if (room && room.players.length >= 2) {
           room.status = "playing";
           const deck = generateDeck();
-          room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; p.drawnPlayableId = null; });
+          room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; p.drawnPlayableId = null; p.calledUno = false; });
           let initialDiscard = deck.pop();
           while (initialDiscard.color === 'black') { deck.unshift(initialDiscard); initialDiscard = deck.pop(); }
           room.deck = deck;
@@ -580,6 +502,7 @@
           room.currentTurn = 0;
           room.direction = 1;
           room.placements = [];
+          room.notification = "Match started!";
         }
         return room;
       });
@@ -612,6 +535,14 @@
       document.getElementById('gameRoomCode').innerText = currentRoomCode;
       document.getElementById('deckCount').innerText = room.deck ? room.deck.length : 0;
       
+      const banner = document.getElementById('announcementBanner');
+      if (room.notification) {
+        banner.innerText = room.notification;
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
+      }
+
       const activeColorEl = document.getElementById('activeColorDisplay');
       activeColorEl.innerText = room.currentColor.toUpperCase();
       const colorHex = { red: '#e84118', blue: '#00a8ff', green: '#4cd137', yellow: '#fbc531' };
@@ -622,11 +553,29 @@
 
       document.getElementById('gamePlayersList').innerHTML = room.players.map((p, idx) => `
         <div class="player-badge ${idx === room.currentTurn ? 'active-turn' : ''}">
-          ${p.name} (${p.hand ? p.hand.length : 0} cards)
+          ${p.name} (${p.hand ? p.hand.length : 0} cards) ${p.calledUno ? '⚡UNO' : ''}
         </div>
       `).join('');
 
       const myData = room.players.find(p => p.id === currentUser.uid);
+      const isMyTurn = room.players[room.currentTurn].id === currentUser.uid;
+
+      const unoBtn = document.getElementById('callUnoBtn');
+      if (myData && myData.calledUno) {
+        unoBtn.classList.add('active');
+        unoBtn.innerText = "UNO CALLED!";
+      } else {
+        unoBtn.classList.remove('active');
+        unoBtn.innerText = "SAY UNO!";
+      }
+
+      const passBtn = document.getElementById('passTurnBtn');
+      if (isMyTurn && myData && myData.drawnPlayableId !== null && myData.drawnPlayableId !== undefined) {
+        passBtn.style.display = 'inline-block';
+      } else {
+        passBtn.style.display = 'none';
+      }
+
       const handContainer = document.getElementById('playerHand');
       handContainer.innerHTML = '';
 
@@ -634,7 +583,7 @@
         myData.hand.forEach((card, idx) => {
           const wrapper = document.createElement('div');
           const isPlayableDrawn = myData.drawnPlayableId === card.id;
-          wrapper.innerHTML = renderCardHTML(card, isPlayableDrawn ? "playable-draw draw-animation" : "");
+          wrapper.innerHTML = renderCardHTML(card, isPlayableDrawn ? "playable-draw" : "");
           const cardEl = wrapper.firstElementChild;
           cardEl.onclick = () => handleCardClick(idx, room);
           handContainer.appendChild(cardEl);
@@ -673,14 +622,49 @@
       }
     };
 
-    function getNextPlayerIndex(room, current, step = 1) {
-      let count = 0;
-      let target = current;
-      while (count < step) {
-        target = (target + room.direction + room.players.length) % room.players.length;
-        if (!room.players[target].out) count++;
+    window.callUno = () => {
+      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
+        if (!room) return room;
+        const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
+        if (myIdx !== -1 && room.players[myIdx].hand.length <= 2) {
+          room.players[myIdx].calledUno = true;
+          room.notification = `${room.players[myIdx].name} called UNO!`;
+        } else {
+          room.notification = "You can only call UNO when you have 1 or 2 cards!";
+        }
+        return room;
+      });
+    };
+
+    window.passTurn = () => {
+      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
+        if (!room) return room;
+        const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
+        if (myIdx !== room.currentTurn) return room;
+
+        const player = room.players[myIdx];
+        player.drawnPlayableId = null;
+        room.notification = `${player.name} passed their turn.`;
+
+        checkUnoPenaltyAndAdvance(room, 1);
+        return room;
+      });
+    };
+
+    function checkUnoPenaltyAndAdvance(room, step = 1) {
+      const currentPlayer = room.players[room.currentTurn];
+
+      // AUTOMATED UNO PENALTY CHECK
+      if (currentPlayer.hand.length === 1 && !currentPlayer.calledUno) {
+        drawCards(room, room.currentTurn, 2);
+        room.notification = `Penalty! ${currentPlayer.name} forgot to say UNO (+2 Cards)!`;
       }
-      return target;
+
+      if (currentPlayer.hand.length !== 1) {
+        currentPlayer.calledUno = false;
+      }
+
+      advanceTurn(room, step);
     }
 
     function playCard(cardIndex, chosenColor) {
@@ -697,6 +681,7 @@
         player.drawnPlayableId = null;
         room.discardPile.push(card);
         room.currentColor = chosenColor;
+        room.notification = "";
 
         let turnStep = 1;
 
@@ -722,20 +707,23 @@
           turnStep = 2;
         }
 
-        advanceTurn(room, turnStep);
-
         if (player.hand.length === 0) {
           player.out = true;
           room.placements.push({ id: player.id, name: player.name, place: room.placements.length + 1 });
         }
 
         const active = room.players.filter(p => !p.out);
-        if (active.length === 1) {
-          active[0].out = true;
-          room.placements.push({ id: active[0].id, name: active[0].name, place: room.placements.length + 1 });
+        if (active.length <= 1) {
+          active.forEach(p => {
+            p.out = true;
+            room.placements.push({ id: p.id, name: p.name, place: room.placements.length + 1 });
+          });
           room.status = "finished";
           calculateXP(room);
+        } else {
+          checkUnoPenaltyAndAdvance(room, turnStep);
         }
+
         return room;
       });
     }
@@ -747,13 +735,19 @@
         if (myIdx !== room.currentTurn) return room;
 
         const player = room.players[myIdx];
+        if (player.drawnPlayableId !== null && player.drawnPlayableId !== undefined) {
+          return room;
+        }
+
         const drawnCard = drawCards(room, myIdx, 1)[0];
 
         if (drawnCard && isCardValid(drawnCard, room)) {
           player.drawnPlayableId = drawnCard.id;
+          room.notification = `${player.name} drew a playable card! Choose to play or pass.`;
         } else {
           player.drawnPlayableId = null;
-          advanceTurn(room, 1);
+          room.notification = `${player.name} drew a card. Turn passed.`;
+          checkUnoPenaltyAndAdvance(room, 1);
         }
         return room;
       });
@@ -778,14 +772,18 @@
       return drawnList;
     }
 
-    function advanceTurn(room, step) {
-      let active = 0;
-      let next = room.currentTurn;
-      while (active < step) {
-        next = (next + room.direction + room.players.length) % room.players.length;
-        if (!room.players[next].out) active++;
+    function getNextPlayerIndex(room, current, step = 1) {
+      let count = 0;
+      let target = current;
+      while (count < step) {
+        target = (target + room.direction + room.players.length) % room.players.length;
+        if (!room.players[target].out) count++;
       }
-      room.currentTurn = next;
+      return target;
+    }
+
+    function advanceTurn(room, step = 1) {
+      room.currentTurn = getNextPlayerIndex(room, room.currentTurn, step);
     }
 
     function calculateXP(room) {
@@ -794,23 +792,23 @@
         handPoints[p.id] = (p.hand || []).reduce((a, b) => a + (b.points || 0), 0);
       });
 
-      room.finalResults = room.placements.map(entry => {
-        let baseXP = 0, bonusXP = 0;
-        if (entry.place === 1) {
+      room.finalResults = room.players.map(player => {
+        const placementEntry = room.placements.find(p => p.id === player.id);
+        const place = placementEntry ? placementEntry.place : room.players.length;
+
+        let baseXP = 25;
+        let bonusXP = 0;
+
+        if (place === 1) {
           baseXP = 100;
           bonusXP = Object.values(handPoints).reduce((a, b) => a + b, 0);
-        } else if (entry.place === 2) {
+        } else if (place === 2) {
           baseXP = 50;
-          room.placements.filter(p => p.place > 2).forEach(p => bonusXP += handPoints[p.id] || 0);
-        } else if (entry.place === 3) {
+        } else if (place === 3) {
           baseXP = 35;
-          const p4 = room.placements.find(p => p.place === 4);
-          if (p4) bonusXP = handPoints[p4.id] || 0;
-        } else {
-          baseXP = 25;
         }
 
-        return { id: entry.id, name: entry.name, place: entry.place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
+        return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
       });
 
       room.finalResults.forEach(res => {
