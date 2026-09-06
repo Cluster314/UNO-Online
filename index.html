@@ -8,47 +8,168 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e74c3c'/><path d='M20 80 L80 20 L80 80 Z' fill='%23f1c40f'/><circle cx='50' cy='50' r='25' fill='%233498db'/><text x='50' y='58' font-size='22' font-weight='bold' font-family='sans-serif' text-anchor='middle' fill='white'>UNO</text></svg>">
 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #1e272e; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+    body { background-color: #1b262c; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
     
-    .screen { width: 100%; max-width: 800px; background: #2c3e50; border-radius: 12px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); text-align: center; }
-    h1, h2, h3 { margin-bottom: 16px; }
+    .screen { width: 100%; max-width: 900px; background: #222f3e; border-radius: 16px; padding: 24px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); text-align: center; border: 1px solid rgba(255,255,255,0.05); position: relative; }
+    h1, h2, h3 { margin-bottom: 16px; font-weight: 800; letter-spacing: 1px; }
     
     .auth-box { display: flex; flex-direction: column; width: 100%; max-width: 320px; margin: 0 auto; gap: 10px; }
-    .profile-card { background: #34495e; padding: 16px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .profile-card { background: #2f3640; padding: 16px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 10px; border: 1px solid #353b48; }
     .profile-card strong { color: #f1c40f; }
 
-    input, button { padding: 12px 16px; font-size: 1rem; border-radius: 6px; border: none; outline: none; margin: 6px 0; }
+    input, button { padding: 12px 16px; font-size: 1rem; border-radius: 8px; border: none; outline: none; margin: 6px 0; }
     input { background: #ecf0f1; color: #2c3e50; text-align: center; font-weight: bold; width: 100%; }
-    button { background: #e74c3c; color: white; font-weight: bold; cursor: pointer; transition: background 0.2s; width: 100%; }
-    button:hover { background: #c0392b; }
+    button { background: #e74c3c; color: white; font-weight: bold; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    button:hover { background: #c0392b; transform: translateY(-2px); }
 
     .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .join-group { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 320px; }
 
-    .game-header { display: flex; justify-content: space-between; align-items: center; background: #34495e; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; }
-    .table-area { display: flex; justify-content: center; align-items: center; gap: 40px; margin: 30px 0; }
+    .game-header { display: flex; justify-content: space-between; align-items: center; background: #2f3640; padding: 14px 24px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
+    .table-area { display: flex; justify-content: center; align-items: center; gap: 50px; margin: 25px 0; background: radial-gradient(circle, #273c75 0%, #192a56 100%); padding: 30px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.1); }
     
-    .card { width: 80px; height: 120px; border-radius: 10px; border: 3px solid #fff; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-    .card.red { background-color: #e74c3c; }
-    .card.blue { background-color: #3498db; }
-    .card.green { background-color: #2ecc71; }
-    .card.yellow { background-color: #f1c40f; color: #2c3e50; }
-    .card.black { background-color: #2d3436; }
+    /* REALISTIC CARD STYLING */
+    .uno-card {
+      width: 90px;
+      height: 135px;
+      border-radius: 10px;
+      border: 4px solid #ffffff;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      background: #111;
+      overflow: hidden;
+    }
 
-    .deck-slot { width: 80px; height: 120px; border: 2px dashed #bdc3c7; border-radius: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer; background: #34495e; }
-    .hand-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; min-height: 140px; padding: 10px; background: #1a252f; border-radius: 8px; }
+    .uno-card:hover {
+      transform: translateY(-10px) scale(1.05);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.6);
+      z-index: 10;
+    }
 
-    .players-status { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-    .player-badge { padding: 8px 14px; border-radius: 20px; background: #34495e; font-size: 0.9rem; }
-    .player-badge.active-turn { border: 2px solid #f1c40f; font-weight: bold; }
+    /* CARD COLORS */
+    .uno-card.red { background-color: #e84118; }
+    .uno-card.blue { background-color: #00a8ff; }
+    .uno-card.green { background-color: #4cd137; }
+    .uno-card.yellow { background-color: #fbc531; }
+    .uno-card.black { background-color: #2f3640; }
 
-    .color-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 100; }
-    .color-picker { background: #2c3e50; padding: 20px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .color-btn { width: 80px; height: 80px; border-radius: 8px; border: none; cursor: pointer; }
+    /* CARD INNER OVAL DESIGN */
+    .uno-card::before {
+      content: '';
+      position: absolute;
+      width: 70px;
+      height: 110px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.95);
+      transform: rotate(-25deg);
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.15);
+    }
+
+    .uno-card.black::before {
+      background: conic-gradient(#e84118 0deg 90deg, #00a8ff 90deg 180deg, #4cd137 180deg 270deg, #fbc531 270deg 360deg);
+    }
+
+    /* CARD VALUE CONTENT */
+    .uno-card .card-value {
+      position: relative;
+      z-index: 2;
+      font-size: 2.2rem;
+      font-weight: 900;
+      font-style: italic;
+      color: #2f3640;
+      text-shadow: 2px 2px 0px rgba(255,255,255,0.8), -1px -1px 0px rgba(0,0,0,0.2);
+    }
+    .uno-card.black .card-value {
+      color: #ffffff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    }
+
+    /* MINI CORNER SYMBOLS */
+    .uno-card .corner-symbol {
+      position: absolute;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #ffffff;
+      z-index: 3;
+    }
+    .uno-card .corner-symbol.top-left { top: 4px; left: 6px; }
+    .uno-card .corner-symbol.bottom-right { bottom: 4px; right: 6px; transform: rotate(180deg); }
+
+    /* BACK OF CARD (DECK) */
+    .uno-card-back {
+      background: linear-gradient(135deg, #2c3e50, #000000);
+      border: 4px solid #ffffff;
+    }
+    .uno-card-back::before {
+      content: '';
+      position: absolute;
+      width: 70px;
+      height: 110px;
+      border-radius: 50%;
+      background: #e74c3c;
+      transform: rotate(-25deg);
+    }
+    .uno-card-back .logo {
+      position: relative;
+      z-index: 2;
+      font-weight: 900;
+      font-style: italic;
+      color: #f1c40f;
+      font-size: 1.1rem;
+      text-shadow: 2px 2px 0 #000;
+      transform: rotate(-15deg);
+    }
+
+    /* ANIMATED HIGHLIGHT FOR PLAYABLE DRAWN CARD */
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 10px #f1c40f, 0 6px 16px rgba(0,0,0,0.4); transform: scale(1); }
+      50% { box-shadow: 0 0 25px #f1c40f, 0 10px 20px rgba(0,0,0,0.6); transform: scale(1.08); }
+      100% { box-shadow: 0 0 10px #f1c40f, 0 6px 16px rgba(0,0,0,0.4); transform: scale(1); }
+    }
+    .uno-card.playable-draw {
+      animation: pulseGlow 1.2s infinite;
+      border-color: #f1c40f;
+    }
+
+    /* ANIMATION FOR DRAWING CARDS */
+    @keyframes drawCardAnim {
+      0% { opacity: 0; transform: translateY(-50px) scale(0.5); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .draw-animation {
+      animation: drawCardAnim 0.35s ease-out forwards;
+    }
+
+    .hand-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 15px; min-height: 160px; padding: 15px; background: #192a56; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+
+    .players-status { display: flex; justify-content: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+    .player-badge { padding: 8px 16px; border-radius: 20px; background: #2f3640; font-size: 0.9rem; border: 1px solid #353b48; }
+    .player-badge.active-turn { border: 2px solid #f1c40f; font-weight: bold; background: #353b48; box-shadow: 0 0 12px rgba(241, 196, 15, 0.4); }
+
+    .color-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
+    .color-picker { background: #2f3640; padding: 24px; border-radius: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border: 2px solid #353b48; }
+    .color-btn { width: 90px; height: 90px; border-radius: 12px; border: 3px solid #fff; cursor: pointer; transition: transform 0.2s; }
+    .color-btn:hover { transform: scale(1.1); }
     
     .results-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    .results-table th, .results-table td { padding: 10px; border: 1px solid #34495e; text-align: center; }
+    .results-table th, .results-table td { padding: 12px; border: 1px solid #353b48; text-align: center; }
+
+    /* CREDITS STYLING */
+    .game-credits {
+      margin-top: 25px;
+      font-size: 0.75rem;
+      color: #8c96a0;
+      line-height: 1.4;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 12px;
+    }
+    .game-credits a { color: #f1c40f; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -56,10 +177,10 @@
   <!-- Color Selector Modal -->
   <div class="color-modal" id="colorModal">
     <div class="color-picker">
-      <button class="color-btn" style="background:#e74c3c" onclick="selectWildColor('red')"></button>
-      <button class="color-btn" style="background:#3498db" onclick="selectWildColor('blue')"></button>
-      <button class="color-btn" style="background:#2ecc71" onclick="selectWildColor('green')"></button>
-      <button class="color-btn" style="background:#f1c40f" onclick="selectWildColor('yellow')"></button>
+      <button class="color-btn" style="background:#e84118" onclick="selectWildColor('red')"></button>
+      <button class="color-btn" style="background:#00a8ff" onclick="selectWildColor('blue')"></button>
+      <button class="color-btn" style="background:#4cd137" onclick="selectWildColor('green')"></button>
+      <button class="color-btn" style="background:#fbc531" onclick="selectWildColor('yellow')"></button>
     </div>
   </div>
 
@@ -74,8 +195,13 @@
       <input type="password" id="authPassword" placeholder="Password">
       
       <button id="loginBtn">Log In</button>
-      <button id="signupBtn" style="background: #27ae60; display: none;">Sign Up</button>
-      <button id="toggleAuthBtn" style="background: transparent; text-decoration: underline; font-size: 0.85rem;">Need an account? Switch to Sign Up</button>
+      <button id="signupBtn" style="background: #4cd137; display: none;">Sign Up</button>
+      <button id="toggleAuthBtn" style="background: transparent; box-shadow: none; text-decoration: underline; font-size: 0.85rem;">Need an account? Switch to Sign Up</button>
+    </div>
+
+    <div class="game-credits">
+      UNO® is a registered trademark created by Merle Robbins (1971) and owned by Mattel, Inc.<br>
+      This fan-made multiplayer edition is built for educational & non-commercial entertainment purposes.
     </div>
   </div>
 
@@ -93,23 +219,31 @@
     </div>
 
     <div class="lobby-controls">
-      <button id="createRoomBtn" style="background: #27ae60; max-width: 320px;">Create New Room</button>
+      <button id="createRoomBtn" style="background: #4cd137; max-width: 320px;">Create New Room</button>
       <div class="join-group">
         <input type="text" id="roomCodeInput" placeholder="6-Digit Code" maxlength="6">
         <button id="joinRoomBtn">Join</button>
       </div>
-      <button id="logoutBtn" style="background: #7f8c8d; max-width: 320px; margin-top: 20px;">Log Out</button>
+      <button id="logoutBtn" style="background: #718093; max-width: 320px; margin-top: 20px;">Log Out</button>
+    </div>
+
+    <div class="game-credits">
+      UNO® is a registered trademark created by Merle Robbins (1971) and owned by Mattel, Inc.
     </div>
   </div>
 
   <!-- WAITING ROOM SCREEN -->
   <div id="waitingScreen" class="screen" style="display: none;">
-    <h2>Room Code: <span id="displayRoomCode" style="color: #f1c40f;">------</span></h2>
+    <h2>Room Code: <span id="displayRoomCode" style="color: #fbc531;">------</span></h2>
     <p style="margin-bottom: 20px;">Waiting for players (2 to 4 Players)...</p>
     <div id="waitingPlayersList" class="players-status"></div>
     <div style="margin-top: 20px;">
-      <button id="startMatchBtn" style="background: #27ae60; display: none; max-width: 320px;">Start Game</button>
+      <button id="startMatchBtn" style="background: #4cd137; display: none; max-width: 320px;">Start Game</button>
       <button id="leaveRoomBtn" style="max-width: 320px;">Leave Room</button>
+    </div>
+
+    <div class="game-credits">
+      UNO® card mechanics inspired by standard official rules.
     </div>
   </div>
 
@@ -117,23 +251,29 @@
   <div id="gameScreen" class="screen" style="display: none;">
     <div class="game-header">
       <div>Room: <strong id="gameRoomCode">------</strong></div>
-      <div>Active Color: <strong id="activeColorDisplay" style="color:#f1c40f">RED</strong></div>
+      <div>Active Color: <strong id="activeColorDisplay" style="color:#fbc531">RED</strong></div>
     </div>
     <div id="gamePlayersList" class="players-status"></div>
 
     <div class="table-area">
-      <div>
-        <p style="font-size: 0.8rem; margin-bottom: 5px;">DRAW DECK</p>
-        <div id="drawDeckBtn" class="deck-slot" onclick="handleDrawClick()">DRAW</div>
+      <div style="text-align: center;">
+        <p style="font-size: 0.75rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px;">DRAW DECK (<span id="deckCount">0</span>)</p>
+        <div id="drawDeckBtn" class="uno-card uno-card-back" onclick="handleDrawClick()">
+          <div class="logo">UNO</div>
+        </div>
       </div>
-      <div>
-        <p style="font-size: 0.8rem; margin-bottom: 5px;">DISCARD PILE</p>
-        <div id="topCardDisplay" class="card red">--</div>
+      <div style="text-align: center;">
+        <p style="font-size: 0.75rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px;">DISCARD PILE</p>
+        <div id="topCardDisplay"></div>
       </div>
     </div>
 
     <h3>Your Hand</h3>
     <div id="playerHand" class="hand-container"></div>
+
+    <div class="game-credits">
+      UNO® Game Mechanics Original Concept by Merle Robbins. Brand owned by Mattel, Inc.
+    </div>
   </div>
 
   <!-- RESULTS SCREEN -->
@@ -145,13 +285,17 @@
       </thead>
       <tbody id="resultsTableBody"></tbody>
     </table>
-    <button id="returnLobbyBtn" style="margin-top: 25px; background: #27ae60;">Return to Lobby</button>
+    <button id="returnLobbyBtn" style="margin-top: 25px; background: #4cd137;">Return to Lobby</button>
+
+    <div class="game-credits">
+      Thanks for playing! UNO® is a trademark of Mattel, Inc.
+    </div>
   </div>
 
   <!-- FIREBASE ENGINE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-    import { getDatabase, ref, set, get, onValue, update, remove, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+    import { getDatabase, ref, set, get, onValue, remove, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -175,6 +319,15 @@
     let pendingWildCardIndex = null;
     let isSignUpMode = false;
 
+    // Symbol translation map for official symbols
+    const SYMBOLS = {
+      'skip': '⊘',
+      'reverse': '⇄',
+      'draw2': '+2',
+      'wild': '★',
+      'wildDraw4': '+4'
+    };
+
     // --- AUTHENTICATION ---
     document.getElementById('toggleAuthBtn').onclick = () => {
       isSignUpMode = !isSignUpMode;
@@ -195,13 +348,7 @@
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         if (cred && cred.user) {
-          const profile = {
-            name: username,
-            xp: 0,
-            level: 1,
-            gamesPlayed: 0,
-            gamesWon: 0
-          };
+          const profile = { name: username, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0 };
           await set(ref(db, `users/${cred.user.uid}`), profile);
           userProfile = profile;
           updateProfileUI();
@@ -240,10 +387,7 @@
           } else {
             userProfile = {
               name: user.email ? user.email.split('@')[0] : "Player_" + Math.floor(1000 + Math.random() * 9000),
-              xp: 0,
-              level: 1,
-              gamesPlayed: 0,
-              gamesWon: 0
+              xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0
             };
             await set(userRef, userProfile);
           }
@@ -267,33 +411,24 @@
       document.getElementById('profileRatio').innerText = ratio;
     }
 
-    // --- CLEANUP AND ROOM MANAGEMENT ---
+    // --- CLEANUP AND DECK ENGINE ---
     async function leaveCurrentRoom() {
       if (!currentRoomCode || !currentUser) return;
-
-      const code = currentRoomCode;
-      const roomRef = ref(db, `rooms/${code}`);
-
+      const roomRef = ref(db, `rooms/${currentRoomCode}`);
       try {
         const snapshot = await get(roomRef);
         if (snapshot.exists()) {
           const room = snapshot.val();
-
           if (room.hostId === currentUser.uid) {
             await remove(roomRef);
           } else {
-            await runTransaction(roomRef, (currentRoom) => {
-              if (currentRoom && currentRoom.players) {
-                currentRoom.players = currentRoom.players.filter(p => p.id !== currentUser.uid);
-              }
-              return currentRoom;
+            await runTransaction(roomRef, (r) => {
+              if (r && r.players) r.players = r.players.filter(p => p.id !== currentUser.uid);
+              return r;
             });
           }
         }
-      } catch (err) {
-        console.error("Error leaving room:", err);
-      }
-
+      } catch (err) { console.error("Error leaving room:", err); }
       if (roomListener) roomListener();
       currentRoomCode = null;
     }
@@ -301,10 +436,8 @@
     async function cleanupPreviousRooms() {
       if (!currentUser) return;
       try {
-        const roomsRef = ref(db, 'rooms');
-        const snapshot = await get(roomsRef);
+        const snapshot = await get(ref(db, 'rooms'));
         if (!snapshot.exists()) return;
-
         const rooms = snapshot.val();
         for (const code in rooms) {
           const room = rooms[code];
@@ -312,169 +445,106 @@
             await remove(ref(db, `rooms/${code}`));
           } else if (room.players && room.players.some(p => p.id === currentUser.uid)) {
             await runTransaction(ref(db, `rooms/${code}`), (r) => {
-              if (r && r.players) {
-                r.players = r.players.filter(p => p.id !== currentUser.uid);
-              }
+              if (r && r.players) r.players = r.players.filter(p => p.id !== currentUser.uid);
               return r;
             });
           }
         }
-      } catch(e) {
-        console.warn("Cleanup warning:", e);
-      }
+      } catch(e) { console.warn("Cleanup warning:", e); }
     }
 
+    // OFFICIAL 108-CARD UNO DECK GENERATOR
     function generateDeck() {
       const colors = ['red', 'blue', 'green', 'yellow'];
       const deck = [];
+
       colors.forEach(color => {
-        deck.push({ color, type: 'number', value: '0', points: 0 });
+        // 1x '0' card per color
+        deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: '0', points: 0 });
+        
+        // 2x '1-9' cards per color
         for (let i = 1; i <= 9; i++) {
-          deck.push({ color, type: 'number', value: i.toString(), points: i }, { color, type: 'number', value: i.toString(), points: i });
+          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: i.toString(), points: i });
+          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: i.toString(), points: i });
         }
+
+        // 2x Action cards per color
         ['skip', 'reverse', 'draw2'].forEach(type => {
-          deck.push({ color, type, value: type.toUpperCase(), points: 20 }, { color, type, value: type.toUpperCase(), points: 20 });
+          const val = SYMBOLS[type];
+          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
+          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
         });
       });
+
+      // 4x Wild & 4x Wild Draw 4
       for (let i = 0; i < 4; i++) {
-        deck.push({ color: 'black', type: 'wild', value: 'WILD', points: 50 }, { color: 'black', type: 'wildDraw4', value: '+4', points: 50 });
+        deck.push({ id: Math.random().toString(36).substr(2, 9), color: 'black', type: 'wild', value: SYMBOLS['wild'], points: 50 });
+        deck.push({ id: Math.random().toString(36).substr(2, 9), color: 'black', type: 'wildDraw4', value: SYMBOLS['wildDraw4'], points: 50 });
       }
+
       return deck.sort(() => Math.random() - 0.5);
     }
 
-    // --- DIAGNOSTIC LOBBY HANDLERS ---
+    // CREATE ROOM & JOIN HANDLERS
     document.getElementById('createRoomBtn').onclick = async () => {
-      console.log("=== CREATE ROOM STARTED ===");
-      if (!currentUser) return alert("Error: No authenticated user found.");
-      if (!userProfile || !userProfile.name) return alert("Error: userProfile is missing or incomplete.");
-
+      if (!currentUser || !userProfile || !userProfile.name) return alert("Error: User state invalid.");
       await cleanupPreviousRooms();
-
       const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
       const roomRef = ref(db, `rooms/${roomCode}`);
 
       try {
         await set(roomRef, {
-          hostId: currentUser.uid,
-          status: "waiting",
-          currentTurn: 0,
-          direction: 1,
-          currentColor: "red",
-          deck: [],
-          discardPile: [],
-          placements: [],
-          pendingDrawCount: 0,
-          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false }]
+          hostId: currentUser.uid, status: "waiting", currentTurn: 0, direction: 1, currentColor: "red",
+          deck: [], discardPile: [], placements: [], pendingDrawCount: 0,
+          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null }]
         });
-
         onDisconnect(roomRef).remove();
-        console.log(`Room created successfully with code: ${roomCode}`);
         enterRoom(roomCode);
-      } catch (err) {
-        console.error("Create Room Failed:", err);
-        alert(`[CREATE ERROR] ${err.code || err.name}: ${err.message}`);
-      }
+      } catch (err) { alert(`[CREATE ERROR] ${err.message}`); }
     };
 
     document.getElementById('joinRoomBtn').onclick = async () => {
-      console.log("=== JOIN ROOM STARTED ===");
-      
-      if (!currentUser) {
-        console.error("Join blocked: currentUser is null");
-        return alert("Join Failed: You are not logged in.");
-      }
-      if (!userProfile || !userProfile.name) {
-        console.error("Join blocked: userProfile missing", userProfile);
-        return alert("Join Failed: Profile not loaded yet. Try again in a moment.");
-      }
-
-      const rawInput = document.getElementById('roomCodeInput').value;
-      const code = rawInput.trim().toString();
-      console.log(`Input room code: "${code}" (Length: ${code.length})`);
-
-      if (code.length !== 6) {
-        return alert(`Join Failed: Room code must be 6 digits (You typed ${code.length} characters).`);
-      }
+      if (!currentUser || !userProfile || !userProfile.name) return alert("Error: Profile loading...");
+      const code = document.getElementById('roomCodeInput').value.trim();
+      if (code.length !== 6) return alert("Room code must be 6 digits.");
 
       try {
         const roomRef = ref(db, `rooms/${code}`);
-
-        console.log(`Fetching path: rooms/${code}...`);
         const snapshot = await get(roomRef);
-
-        if (!snapshot.exists()) {
-          console.warn(`Path "rooms/${code}" does not exist in the database.`);
-          return alert(`Join Failed: Room code "${code}" was not found in database.`);
-        }
-
+        if (!snapshot.exists()) return alert(`Room "${code}" not found.`);
         const roomData = snapshot.val();
-        console.log("Room Data found:", roomData);
-
-        if (roomData.status !== "waiting") {
-          return alert(`Join Failed: Room status is "${roomData.status}" (must be "waiting").`);
-        }
-
+        if (roomData.status !== "waiting") return alert("Game already in progress.");
         const players = roomData.players || [];
-        const isAlreadyMember = players.some(p => p.id === currentUser.uid);
+        if (players.length >= 4 && !players.some(p => p.id === currentUser.uid)) return alert("Room is full.");
 
-        if (players.length >= 4 && !isAlreadyMember) {
-          return alert(`Join Failed: Room is full (${players.length}/4 players).`);
-        }
-
-        console.log("Attempting database transaction...");
         await cleanupPreviousRooms();
-
         const res = await runTransaction(roomRef, (room) => {
           if (room === null) return room;
-
           if (!room.players) room.players = [];
-
           const existingIdx = room.players.findIndex(p => p.id === currentUser.uid);
-          if (existingIdx !== -1) {
-            room.players[existingIdx].name = userProfile.name;
-          } else {
-            room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false });
-          }
+          if (existingIdx !== -1) room.players[existingIdx].name = userProfile.name;
+          else room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null });
           return room;
         });
 
-        console.log("Transaction Result:", res);
-
-        if (res.committed) {
-          console.log("Successfully joined room!");
-          enterRoom(code);
-        } else {
-          alert("[TRANSACTION ABORTED] Database refused to commit transaction.");
-        }
-
-      } catch (err) {
-        console.error("Join Room Threw Error:", err);
-        alert(`[DATABASE ERROR] ${err.code || err.name}: ${err.message}`);
-      }
+        if (res.committed) enterRoom(code);
+      } catch (err) { alert(`[JOIN ERROR] ${err.message}`); }
     };
 
     function enterRoom(code) {
       currentRoomCode = code;
       showScreen('waitingScreen');
       document.getElementById('displayRoomCode').innerText = code;
-
       if (roomListener) roomListener();
 
       roomListener = onValue(ref(db, `rooms/${code}`), (snapshot) => {
-        if (!snapshot.exists()) {
-          alert("The room no longer exists.");
-          leaveLobbyUI();
-          return;
-        }
-
+        if (!snapshot.exists()) { alert("Room closed."); return leaveLobbyUI(); }
         const room = snapshot.val();
 
-        const hostExists = room.players && room.players.some(p => p.id === room.hostId);
-        if (!hostExists) {
+        if (!room.players || !room.players.some(p => p.id === room.hostId)) {
           remove(ref(db, `rooms/${code}`));
-          alert("Host left the room. Room deleted.");
-          leaveLobbyUI();
-          return;
+          alert("Host disconnected.");
+          return leaveLobbyUI();
         }
 
         if (room.status === "waiting") {
@@ -494,25 +564,23 @@
 
     document.getElementById('startMatchBtn').onclick = () => {
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
-        if (room && room.players.length >= 2) startMatch(room);
+        if (room && room.players.length >= 2) {
+          room.status = "playing";
+          const deck = generateDeck();
+          room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; p.drawnPlayableId = null; });
+          let initialDiscard = deck.pop();
+          while (initialDiscard.color === 'black') { deck.unshift(initialDiscard); initialDiscard = deck.pop(); }
+          room.deck = deck;
+          room.discardPile = [initialDiscard];
+          room.currentColor = initialDiscard.color;
+          room.currentTurn = 0;
+          room.direction = 1;
+          room.placements = [];
+          room.pendingDrawCount = 0;
+        }
         return room;
       });
     };
-
-    function startMatch(room) {
-      room.status = "playing";
-      const deck = generateDeck();
-      room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; });
-      let initialDiscard = deck.pop();
-      while (initialDiscard.color === 'black') { deck.unshift(initialDiscard); initialDiscard = deck.pop(); }
-      room.deck = deck;
-      room.discardPile = [initialDiscard];
-      room.currentColor = initialDiscard.color;
-      room.currentTurn = 0;
-      room.direction = 1;
-      room.placements = [];
-      room.pendingDrawCount = 0;
-    }
 
     document.getElementById('leaveRoomBtn').onclick = async () => {
       await leaveCurrentRoom();
@@ -525,19 +593,33 @@
       showScreen('lobbyScreen');
     }
 
-    // --- GAMEPLAY HANDLERS ---
+    // --- GAME RENDERING ENGINE ---
+    function renderCardHTML(card, extraClasses = "") {
+      const displayVal = card.value;
+      return `
+        <div class="uno-card ${card.color} ${extraClasses}">
+          <span class="corner-symbol top-left">${displayVal}</span>
+          <span class="card-value">${displayVal}</span>
+          <span class="corner-symbol bottom-right">${displayVal}</span>
+        </div>
+      `;
+    }
+
     function renderGame(room) {
       document.getElementById('gameRoomCode').innerText = currentRoomCode;
-      document.getElementById('activeColorDisplay').innerText = room.currentColor.toUpperCase();
+      document.getElementById('deckCount').innerText = room.deck ? room.deck.length : 0;
       
+      const activeColorEl = document.getElementById('activeColorDisplay');
+      activeColorEl.innerText = room.currentColor.toUpperCase();
+      const colorHex = { red: '#e84118', blue: '#00a8ff', green: '#4cd137', yellow: '#fbc531' };
+      activeColorEl.style.color = colorHex[room.currentColor] || '#fbc531';
+
       const topCard = room.discardPile[room.discardPile.length - 1];
-      const topCardEl = document.getElementById('topCardDisplay');
-      topCardEl.className = `card ${topCard.color}`;
-      topCardEl.innerText = topCard.value;
+      document.getElementById('topCardDisplay').innerHTML = renderCardHTML(topCard);
 
       document.getElementById('gamePlayersList').innerHTML = room.players.map((p, idx) => `
         <div class="player-badge ${idx === room.currentTurn ? 'active-turn' : ''}">
-          ${p.name} (${p.hand ? p.hand.length : 0})
+          ${p.name} (${p.hand ? p.hand.length : 0} cards)
         </div>
       `).join('');
 
@@ -547,13 +629,20 @@
 
       if (myData && myData.hand && !myData.out) {
         myData.hand.forEach((card, idx) => {
-          const cardEl = document.createElement('div');
-          cardEl.className = `card ${card.color}`;
-          cardEl.innerText = card.value;
+          const wrapper = document.createElement('div');
+          const isPlayableDrawn = myData.drawnPlayableId === card.id;
+          wrapper.innerHTML = renderCardHTML(card, isPlayableDrawn ? "playable-draw draw-animation" : "");
+          const cardEl = wrapper.firstElementChild;
           cardEl.onclick = () => handleCardClick(idx, room);
           handContainer.appendChild(cardEl);
         });
       }
+    }
+
+    function isCardValid(card, room) {
+      const topCard = room.discardPile[room.discardPile.length - 1];
+      if (room.pendingDrawCount > 0) return card.type === 'draw2' || card.type === 'wildDraw4';
+      return card.color === 'black' || card.color === room.currentColor || card.value === topCard.value;
     }
 
     function handleCardClick(cardIndex, room) {
@@ -561,14 +650,9 @@
       if (room.currentTurn !== myIndex) return alert("Not your turn!");
 
       const card = room.players[myIndex].hand[cardIndex];
-      const topCard = room.discardPile[room.discardPile.length - 1];
 
-      if (room.pendingDrawCount > 0 && card.type !== 'draw2' && card.type !== 'wildDraw4') {
-        return alert(`Must draw +${room.pendingDrawCount} or play a draw card!`);
-      }
-
-      if (card.color !== 'black' && card.color !== room.currentColor && card.value !== topCard.value) {
-        return alert("Invalid move!");
+      if (!isCardValid(card, room)) {
+        return alert("This card cannot be played! Match color, value, or play a Wild.");
       }
 
       if (card.color === 'black') {
@@ -593,6 +677,7 @@
         const player = room.players[room.currentTurn];
         const card = player.hand.splice(cardIndex, 1)[0];
 
+        player.drawnPlayableId = null;
         room.discardPile.push(card);
         room.currentColor = chosenColor;
 
@@ -627,26 +712,53 @@
       });
     }
 
+    // DRAW MECHANIC (MATCH ON DRAW & AUTO RESHUFFLE)
     window.handleDrawClick = () => {
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
-        if (!room || room.players.findIndex(p => p.id === currentUser.uid) !== room.currentTurn) return room;
-        const count = room.pendingDrawCount > 0 ? room.pendingDrawCount : 1;
-        drawCards(room, room.currentTurn, count);
-        room.pendingDrawCount = 0;
-        advanceTurn(room, 1);
+        if (!room) return room;
+        const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
+        if (myIdx !== room.currentTurn) return room;
+
+        const player = room.players[myIdx];
+
+        if (room.pendingDrawCount > 0) {
+          drawCards(room, myIdx, room.pendingDrawCount);
+          room.pendingDrawCount = 0;
+          player.drawnPlayableId = null;
+          advanceTurn(room, 1);
+        } else {
+          // Draw 1 card
+          const drawnCard = drawCards(room, myIdx, 1)[0];
+
+          if (drawnCard && isCardValid(drawnCard, room)) {
+            player.drawnPlayableId = drawnCard.id; // Highlight card for immediate play
+          } else {
+            player.drawnPlayableId = null;
+            advanceTurn(room, 1);
+          }
+        }
         return room;
       });
     };
 
     function drawCards(room, playerIdx, count) {
+      const drawnList = [];
       for (let i = 0; i < count; i++) {
-        if (room.deck.length === 0) {
-          const top = room.discardPile.pop();
-          room.deck = room.discardPile.sort(() => Math.random() - 0.5);
-          room.discardPile = [top];
+        // RESHUFFLE MECHANIC WHEN DECK IS EMPTY
+        if (!room.deck || room.deck.length === 0) {
+          if (room.discardPile.length > 1) {
+            const top = room.discardPile.pop();
+            room.deck = room.discardPile.sort(() => Math.random() - 0.5);
+            room.discardPile = [top];
+          }
         }
-        if (room.deck.length > 0) room.players[playerIdx].hand.push(room.deck.pop());
+        if (room.deck && room.deck.length > 0) {
+          const card = room.deck.pop();
+          room.players[playerIdx].hand.push(card);
+          drawnList.push(card);
+        }
       }
+      return drawnList;
     }
 
     function advanceTurn(room, step) {
@@ -659,7 +771,7 @@
       room.currentTurn = next;
     }
 
-    // --- XP SYSTEM ---
+    // --- XP CALCULATIONS ---
     function calculateXP(room) {
       const handPoints = {};
       room.players.forEach(p => {
