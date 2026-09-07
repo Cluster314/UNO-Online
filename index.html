@@ -204,7 +204,7 @@
 
   <!-- WAITING ROOM SCREEN -->
   <div id="waitingScreen" class="screen" style="display: none;">
-    2 Room Code: <span id="displayRoomCode" style="color: #fbc531;">------</span></h2>
+    <h2>Room Code: <span id="displayRoomCode" style="color: #fbc531;">------</span></h2>
     <p style="margin-bottom: 20px;">Waiting for players (2 to 4 Players)...</p>
     <div id="waitingPlayersList" class="players-status"></div>
     
@@ -407,9 +407,9 @@
       const urlParams = new URLSearchParams(window.location.search);
       const roomFromUrl = urlParams.get('room');
 
-      if (roomFromUrl && roomFromUrl.length === 6) {
+      if (roomFromUrl && roomFromUrl.length === 6 && currentRoomCode !== roomFromUrl) {
         await joinRoomByCode(roomFromUrl);
-      } else {
+      } else if (!currentRoomCode) {
         showScreen('lobbyScreen');
       }
     }
@@ -568,6 +568,10 @@
     // --- CLEANUP AND DECK ENGINE ---
     async function leaveCurrentRoom() {
       if (!currentRoomCode || !currentUser) return;
+      if (roomListener) {
+        roomListener();
+        roomListener = null;
+      }
       const roomRef = ref(db, `rooms/${currentRoomCode}`);
       try {
         const snapshot = await get(roomRef);
@@ -584,17 +588,17 @@
         }
         await update(ref(db, `users/${currentUser.uid}`), { currentRoom: null });
       } catch (err) { console.error("Error leaving room:", err); }
-      if (roomListener) roomListener();
       currentRoomCode = null;
     }
 
-    async function cleanupPreviousRooms() {
+    async function cleanupPreviousRooms(targetJoinRoom = null) {
       if (!currentUser) return;
       try {
         const snapshot = await get(ref(db, 'rooms'));
         if (!snapshot.exists()) return;
         const rooms = snapshot.val();
         for (const code in rooms) {
+          if (code === targetJoinRoom) continue;
           const room = rooms[code];
           if (room.hostId === currentUser.uid) {
             await remove(ref(db, `rooms/${code}`));
@@ -624,7 +628,7 @@
         ['skip', 'reverse', 'draw2'].forEach(type => {
           const val = SYMBOLS[type];
           deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
-          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
+          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: val, points: 20 });
         });
       });
 
@@ -673,7 +677,7 @@
         const players = roomData.players || [];
         if (players.length >= 4 && !players.some(p => p.id === currentUser.uid)) return alert("Room is full.");
 
-        await cleanupPreviousRooms();
+        await cleanupPreviousRooms(code);
         const res = await runTransaction(roomRef, (room) => {
           if (room === null) return room;
           if (!room.players) room.players = [];
@@ -691,19 +695,32 @@
     }
 
     function enterRoom(code) {
+      if (roomListener) {
+        roomListener();
+        roomListener = null;
+      }
+
       currentRoomCode = code;
       showScreen('waitingScreen');
       document.getElementById('displayRoomCode').innerText = code;
-      if (roomListener) roomListener();
 
       roomListener = onValue(ref(db, `rooms/${code}`), (snapshot) => {
-        if (!snapshot.exists()) { alert("Room closed."); return leaveLobbyUI(); }
+        if (!snapshot.exists()) {
+          if (currentRoomCode === code) {
+            alert("Room closed.");
+            leaveLobbyUI();
+          }
+          return;
+        }
         const room = snapshot.val();
 
         if (!room.players || !room.players.some(p => p.id === room.hostId)) {
           remove(ref(db, `rooms/${code}`));
-          alert("Host disconnected.");
-          return leaveLobbyUI();
+          if (currentRoomCode === code) {
+            alert("Host disconnected.");
+            leaveLobbyUI();
+          }
+          return;
         }
 
         if (room.status === "waiting") {
@@ -762,7 +779,10 @@
     };
 
     function leaveLobbyUI() {
-      if (roomListener) roomListener();
+      if (roomListener) {
+        roomListener();
+        roomListener = null;
+      }
       currentRoomCode = null;
       window.history.replaceState({}, document.title, window.location.pathname);
       showScreen('lobbyScreen');
