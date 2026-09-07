@@ -408,6 +408,7 @@
       const roomFromUrl = urlParams.get('room');
 
       if (roomFromUrl && roomFromUrl.length === 6 && currentRoomCode !== roomFromUrl) {
+        currentRoomCode = null;
         await joinRoomByCode(roomFromUrl);
       } else if (!currentRoomCode) {
         showScreen('lobbyScreen');
@@ -418,7 +419,6 @@
     function listenToFriendsData() {
       if (!currentUser) return;
 
-      // Pending Incoming Requests
       onValue(ref(db, `friends/${currentUser.uid}/requests`), (snapshot) => {
         const requests = snapshot.val() || {};
         const container = document.getElementById('pendingRequestsList');
@@ -443,7 +443,6 @@
         }
       });
 
-      // Accepted Friends List with Conditional Join Button & Profile View
       onValue(ref(db, `friends/${currentUser.uid}/list`), async (snapshot) => {
         const friends = snapshot.val() || {};
         const container = document.getElementById('friendsList');
@@ -454,7 +453,6 @@
         for (const fUid of friendUids) {
           const name = friends[fUid].name;
 
-          // Check if friend is currently in a room that is in 'waiting' status
           let isJoinable = false;
           const friendSnap = await get(ref(db, `users/${fUid}`));
           if (friendSnap.exists()) {
@@ -593,6 +591,12 @@
 
     async function cleanupPreviousRooms(targetJoinRoom = null) {
       if (!currentUser) return;
+      
+      if (roomListener) {
+        roomListener();
+        roomListener = null;
+      }
+
       try {
         const snapshot = await get(ref(db, 'rooms'));
         if (!snapshot.exists()) return;
@@ -707,6 +711,7 @@
       roomListener = onValue(ref(db, `rooms/${code}`), (snapshot) => {
         if (!snapshot.exists()) {
           if (currentRoomCode === code) {
+            currentRoomCode = null;
             alert("Room closed.");
             leaveLobbyUI();
           }
@@ -717,6 +722,7 @@
         if (!room.players || !room.players.some(p => p.id === room.hostId)) {
           remove(ref(db, `rooms/${code}`));
           if (currentRoomCode === code) {
+            currentRoomCode = null;
             alert("Host disconnected.");
             leaveLobbyUI();
           }
