@@ -297,6 +297,7 @@
     let roomListener = null;
     let pendingWildCardIndex = null;
     let isSignUpMode = false;
+    let isTransitioning = false;
 
     const SYMBOLS = {
       'skip': '⊘',
@@ -408,7 +409,6 @@
       const roomFromUrl = urlParams.get('room');
 
       if (roomFromUrl && roomFromUrl.length === 6 && currentRoomCode !== roomFromUrl) {
-        currentRoomCode = null;
         await joinRoomByCode(roomFromUrl);
       } else if (!currentRoomCode) {
         showScreen('lobbyScreen');
@@ -671,17 +671,39 @@
     async function joinRoomByCode(code) {
       if (!currentUser || !userProfile || !userProfile.name) return;
       if (!code || code.length !== 6) return alert("Room code must be 6 digits.");
+      if (isTransitioning) return;
+
+      isTransitioning = true;
 
       try {
+        if (roomListener) {
+          roomListener();
+          roomListener = null;
+        }
+
         const roomRef = ref(db, `rooms/${code}`);
         const snapshot = await get(roomRef);
-        if (!snapshot.exists()) return alert(`Room "${code}" not found.`);
-        const roomData = snapshot.val();
-        if (roomData.status !== "waiting") return alert("Game already in progress.");
-        const players = roomData.players || [];
-        if (players.length >= 4 && !players.some(p => p.id === currentUser.uid)) return alert("Room is full.");
+        
+        if (!snapshot.exists()) {
+          isTransitioning = false;
+          return alert(`Room "${code}" not found.`);
+        }
 
+        const roomData = snapshot.val();
+        if (roomData.status !== "waiting") {
+          isTransitioning = false;
+          return alert("Game already in progress.");
+        }
+
+        const players = roomData.players || [];
+        if (players.length >= 4 && !players.some(p => p.id === currentUser.uid)) {
+          isTransitioning = false;
+          return alert("Room is full.");
+        }
+
+        currentRoomCode = null;
         await cleanupPreviousRooms(code);
+
         const res = await runTransaction(roomRef, (room) => {
           if (room === null) return room;
           if (!room.players) room.players = [];
@@ -695,7 +717,11 @@
           await update(ref(db, `users/${currentUser.uid}`), { currentRoom: code });
           enterRoom(code);
         }
-      } catch (err) { alert(`[JOIN ERROR] ${err.message}`); }
+      } catch (err) { 
+        alert(`[JOIN ERROR] ${err.message}`); 
+      } finally {
+        isTransitioning = false;
+      }
     }
 
     function enterRoom(code) {
@@ -710,7 +736,7 @@
 
       roomListener = onValue(ref(db, `rooms/${code}`), (snapshot) => {
         if (!snapshot.exists()) {
-          if (currentRoomCode === code) {
+          if (currentRoomCode === code && !isTransitioning) {
             currentRoomCode = null;
             alert("Room closed.");
             leaveLobbyUI();
@@ -721,7 +747,7 @@
 
         if (!room.players || !room.players.some(p => p.id === room.hostId)) {
           remove(ref(db, `rooms/${code}`));
-          if (currentRoomCode === code) {
+          if (currentRoomCode === code && !isTransitioning) {
             currentRoomCode = null;
             alert("Host disconnected.");
             leaveLobbyUI();
