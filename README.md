@@ -5,13 +5,13 @@ Let's get straight to the features:
 ## Features
 - Sign Up / Log in
 - Profiles:
-- - Total games
+  - Total games
   - Wins
   - Losses
   - W/L Ratio
 - Playing:
-- - 108-card deck:
-  - - Number 0 (1 card per color, 4 total)
+  - 108-card deck:
+    - Number 0 (1 card per color, 4 total)
     - Numbers 1-9 (2 cards of each number per color, 72 total)
     - Draw 2 (2 cards per color, 8 total)
     - Reverse (2 cards per color, 8 total)
@@ -21,7 +21,7 @@ Let's get straight to the features:
   - Rooms (any 6-digit number) 
   - 2-4 players per room
 - Friending:
-- - Friend using username
+  - Friend using username
   - View friends' profiles
   - Join friends
 
