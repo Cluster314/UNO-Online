@@ -632,7 +632,7 @@
         ['skip', 'reverse', 'draw2'].forEach(type => {
           const val = SYMBOLS[type];
           deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
-          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type: 'number', value: val, points: 20 });
+          deck.push({ id: Math.random().toString(36).substr(2, 9), color, type, value: val, points: 20 });
         });
       });
 
@@ -1056,16 +1056,20 @@
 
     function drawCards(room, playerIdx, count) {
       const drawnList = [];
+      if (!room.deck) room.deck = [];
+      if (!room.discardPile) room.discardPile = [];
+
       for (let i = 0; i < count; i++) {
-        if (!room.deck || room.deck.length === 0) {
+        if (room.deck.length === 0) {
           if (room.discardPile.length > 1) {
             const top = room.discardPile.pop();
             room.deck = room.discardPile.sort(() => Math.random() - 0.5);
             room.discardPile = [top];
           }
         }
-        if (room.deck && room.deck.length > 0) {
+        if (room.deck.length > 0) {
           const card = room.deck.pop();
+          if (!room.players[playerIdx].hand) room.players[playerIdx].hand = [];
           room.players[playerIdx].hand.push(card);
           drawnList.push(card);
         }
