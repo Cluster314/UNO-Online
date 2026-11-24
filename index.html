@@ -96,6 +96,7 @@
     .action-bar button { width: auto; min-width: 130px; margin: 0; }
     .uno-btn { background: #fbc531; color: #2c3e50; }
     .uno-btn.active { background: #4cd137; color: white; }
+    .uno-btn.warning { background: #e74c3c; color: white; animation: pulseGlow 0.5s infinite; }
 
     .announcement-banner { background: #eb4d4b; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; margin-bottom: 12px; display: none; }
 
@@ -298,6 +299,7 @@
     let pendingWildCardIndex = null;
     let isSignUpMode = false;
     let isTransitioning = false;
+    let unoPenaltyTimer = null;
 
     const SYMBOLS = {
       'skip': '⊘',
@@ -471,6 +473,7 @@
             <span class="friend-name-clickable" onclick="viewFriendProfile('${fUid}')">${name}</span>
             <div class="friend-actions">
               ${isJoinable ? `<button style="background: #00a8ff;" onclick="joinFriendGame('${fUid}')">Join Room</button>` : ''}
+              <button style="background: #e74c3c;" onclick="removeFriend('${fUid}')">Unfriend</button>
             </div>
           `;
           container.appendChild(div);
@@ -513,6 +516,18 @@
 
     window.declineFriend = async (friendUid) => {
       await remove(ref(db, `friends/${currentUser.uid}/requests/${friendUid}`));
+    };
+
+    window.removeFriend = async (friendUid) => {
+      if (!currentUser) return;
+      if (confirm("Are you sure you want to remove this friend?")) {
+        try {
+          await remove(ref(db, `friends/${currentUser.uid}/list/${friendUid}`));
+          await remove(ref(db, `friends/${friendUid}/list/${currentUser.uid}`));
+        } catch (err) {
+          alert("Error removing friend: " + err.message);
+        }
+      }
     };
 
     window.viewFriendProfile = async (friendUid) => {
@@ -655,7 +670,7 @@
         await set(roomRef, {
           hostId: currentUser.uid, status: "waiting", currentTurn: 0, direction: 1, currentColor: "red",
           deck: [], discardPile: [], placements: [], notification: "",
-          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false }]
+          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null }]
         });
         await update(ref(db, `users/${currentUser.uid}`), { currentRoom: roomCode });
         onDisconnect(roomRef).remove();
@@ -709,7 +724,7 @@
           if (!room.players) room.players = [];
           const existingIdx = room.players.findIndex(p => p.id === currentUser.uid);
           if (existingIdx !== -1) room.players[existingIdx].name = userProfile.name;
-          else room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false });
+          else room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null });
           return room;
         });
 
@@ -790,7 +805,7 @@
         if (room && room.players.length >= 2) {
           room.status = "playing";
           const deck = generateDeck();
-          room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; p.drawnPlayableId = null; p.calledUno = false; });
+          room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; p.drawnPlayableId = null; p.calledUno = false; p.unoTimerExpires = null; });
           let initialDiscard = deck.pop();
           while (initialDiscard.color === 'black') { deck.unshift(initialDiscard); initialDiscard = deck.pop(); }
           room.deck = deck;
@@ -814,6 +829,10 @@
       if (roomListener) {
         roomListener();
         roomListener = null;
+      }
+      if (unoPenaltyTimer) {
+        clearTimeout(unoPenaltyTimer);
+        unoPenaltyTimer = null;
       }
       currentRoomCode = null;
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -861,13 +880,31 @@
       const myData = room.players.find(p => p.id === currentUser.uid);
       const isMyTurn = room.players[room.currentTurn].id === currentUser.uid;
 
+      // Handle UNO Button 2-Second Timer Rules
       const unoBtn = document.getElementById('callUnoBtn');
-      if (myData && myData.calledUno) {
-        unoBtn.classList.add('active');
-        unoBtn.innerText = "UNO CALLED!";
-      } else {
-        unoBtn.classList.remove('active');
-        unoBtn.innerText = "SAY UNO!";
+      if (myData) {
+        if (myData.calledUno) {
+          unoBtn.className = "uno-btn active";
+          unoBtn.innerText = "UNO CALLED!";
+        } else if (myData.hand && myData.hand.length === 1 && myData.unoTimerExpires) {
+          unoBtn.className = "uno-btn warning";
+          unoBtn.innerText = "PRESS UNO NOW! (2s)";
+          
+          // Clear any local existing timer
+          if (unoPenaltyTimer) clearTimeout(unoPenaltyTimer);
+          const remainingTime = Math.max(0, myData.unoTimerExpires - Date.now());
+          
+          unoPenaltyTimer = setTimeout(() => {
+            triggerUnoTimerPenalty();
+          }, remainingTime);
+        } else {
+          unoBtn.className = "uno-btn";
+          unoBtn.innerText = "SAY UNO!";
+          if (unoPenaltyTimer) {
+            clearTimeout(unoPenaltyTimer);
+            unoPenaltyTimer = null;
+          }
+        }
       }
 
       const passBtn = document.getElementById('passTurnBtn');
@@ -890,6 +927,27 @@
           handContainer.appendChild(cardEl);
         });
       }
+    }
+
+    function triggerUnoTimerPenalty() {
+      if (unoPenaltyTimer) {
+        clearTimeout(unoPenaltyTimer);
+        unoPenaltyTimer = null;
+      }
+      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
+        if (!room) return room;
+        const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
+        if (myIdx !== -1) {
+          const player = room.players[myIdx];
+          if (player.hand.length === 1 && !player.calledUno) {
+            drawCards(room, myIdx, 2);
+            player.unoTimerExpires = null;
+            player.calledUno = false;
+            room.notification = `Penalty! ${player.name} failed to say UNO within 2 seconds (+2 Cards)!`;
+          }
+        }
+        return room;
+      });
     }
 
     function isCardValid(card, room) {
@@ -924,12 +982,17 @@
     };
 
     window.callUno = () => {
+      if (unoPenaltyTimer) {
+        clearTimeout(unoPenaltyTimer);
+        unoPenaltyTimer = null;
+      }
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
         const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
         
         if (myIdx !== -1 && room.players[myIdx].hand.length === 1) {
           room.players[myIdx].calledUno = true;
+          room.players[myIdx].unoTimerExpires = null;
           room.notification = `${room.players[myIdx].name} called UNO!`;
         } else {
           room.notification = "You can only call UNO when you have exactly 1 card left!";
@@ -948,25 +1011,10 @@
         player.drawnPlayableId = null;
         room.notification = `${player.name} passed their turn.`;
 
-        checkUnoPenaltyAndAdvance(room, 1);
+        advanceTurn(room, 1);
         return room;
       });
     };
-
-    function checkUnoPenaltyAndAdvance(room, step = 1) {
-      const currentPlayer = room.players[room.currentTurn];
-
-      if (currentPlayer.hand.length === 1 && !currentPlayer.calledUno) {
-        drawCards(room, room.currentTurn, 2);
-        room.notification = `Penalty! ${currentPlayer.name} forgot to say UNO (+2 Cards)!`;
-      }
-
-      if (currentPlayer.hand.length !== 1) {
-        currentPlayer.calledUno = false;
-      }
-
-      advanceTurn(room, step);
-    }
 
     function playCard(cardIndex, chosenColor) {
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
@@ -983,6 +1031,16 @@
         room.discardPile.push(card);
         room.currentColor = chosenColor;
         room.notification = "";
+
+        // Check UNO 2-Second Trigger Rule
+        if (player.hand.length === 1) {
+          player.calledUno = false;
+          player.unoTimerExpires = Date.now() + 2000;
+          room.notification = `⚠️ ${player.name} has 1 card left! 2 SECONDS TO SAY UNO!`;
+        } else {
+          player.calledUno = false;
+          player.unoTimerExpires = null;
+        }
 
         let turnStep = 1;
 
@@ -1022,7 +1080,7 @@
           room.status = "finished";
           calculateXP(room);
         } else {
-          checkUnoPenaltyAndAdvance(room, turnStep);
+          advanceTurn(room, turnStep);
         }
 
         return room;
@@ -1048,7 +1106,7 @@
         } else {
           player.drawnPlayableId = null;
           room.notification = `${player.name} drew a card. Turn passed.`;
-          checkUnoPenaltyAndAdvance(room, 1);
+          advanceTurn(room, 1);
         }
         return room;
       });
