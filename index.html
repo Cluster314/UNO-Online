@@ -54,7 +54,6 @@
     .lobby-banner .uno-card.green { background-color: #4cd137; }
     .lobby-banner .uno-card.yellow { background-color: #fbc531; }
 
-    /* Shrink the white oval specifically for smaller banner cards */
     .lobby-banner .uno-card::before {
       content: ''; position: absolute; width: 44px; height: 66px; border-radius: 50%;
       background: #ffffff; transform: rotate(-28deg); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
@@ -86,7 +85,6 @@
     .game-header { display: flex; justify-content: space-between; align-items: center; background: #2f3640; padding: 14px 24px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
     .table-area { display: flex; justify-content: center; align-items: center; gap: 50px; margin: 20px 0; background: radial-gradient(circle, #273c75 0%, #192a56 100%); padding: 35px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.1); }
     
-    /* Gameplay UNO Cards */
     .uno-card {
       width: 90px; height: 135px; border-radius: 10px; border: 4px solid #ffffff;
       box-shadow: 0 6px 16px rgba(0,0,0,0.4); position: relative; display: flex;
@@ -140,7 +138,6 @@
     .action-bar button { width: auto; min-width: 130px; margin: 0; }
     .uno-btn { background: #fbc531; color: #2c3e50; }
     .uno-btn.active { background: #4cd137; color: white; }
-    .uno-btn.warning { background: #e74c3c; color: white; animation: pulseGlow 0.5s infinite; }
 
     .announcement-banner { background: #eb4d4b; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; margin-bottom: 12px; display: none; }
 
@@ -239,7 +236,7 @@
       <div class="dashboard-panel guide-panel">
         <h3>How to Play & Rules</h3>
         <ul class="guide-list">
-          <li><span>⚡ 2-Second UNO Penalty:</span> Hit "SAY UNO!" within 2 seconds of having 1 card left, or draw 2 penalty cards.</li>
+          <li><span>⚡ 0.5s UNO Penalty:</span> Hit "SAY UNO!" within 0.5 seconds of having 1 card left, or draw 2 penalty cards.</li>
           <li><span>🔄 2-Player Reverse:</span> Playing a Reverse card in a 2-player match acts as a Skip, giving you another turn.</li>
           <li><span>🏆 XP Progression:</span> Win matches and accumulate points from leftover opponent hands to rank up your profile level.</li>
           <li><span>🔗 Quick Invites:</span> Create a room and send direct room codes or links to your friends to play together instantly.</li>
@@ -801,28 +798,28 @@
       const myData = room.players.find(p => p.id === currentUser.uid);
       const isMyTurn = room.players[room.currentTurn].id === currentUser.uid;
 
-      // Handle UNO Button 2-Second Timer Rules
+      // Handle UNO Button 0.5-Second Timer Rules (Silent / No Reminders)
       const unoBtn = document.getElementById('callUnoBtn');
       if (myData) {
         if (myData.calledUno) {
           unoBtn.className = "uno-btn active";
           unoBtn.innerText = "UNO CALLED!";
-        } else if (myData.hand && myData.hand.length === 1 && myData.unoTimerExpires) {
-          unoBtn.className = "uno-btn warning";
-          unoBtn.innerText = "PRESS UNO NOW! (2s)";
-          
-          if (unoPenaltyTimer) clearTimeout(unoPenaltyTimer);
-          const remainingTime = Math.max(0, myData.unoTimerExpires - Date.now());
-          
-          unoPenaltyTimer = setTimeout(() => {
-            triggerUnoTimerPenalty();
-          }, remainingTime);
         } else {
           unoBtn.className = "uno-btn";
           unoBtn.innerText = "SAY UNO!";
-          if (unoPenaltyTimer) {
-            clearTimeout(unoPenaltyTimer);
-            unoPenaltyTimer = null;
+          
+          if (myData.hand && myData.hand.length === 1 && myData.unoTimerExpires) {
+            if (unoPenaltyTimer) clearTimeout(unoPenaltyTimer);
+            const remainingTime = Math.max(0, myData.unoTimerExpires - Date.now());
+            
+            unoPenaltyTimer = setTimeout(() => {
+              triggerUnoTimerPenalty();
+            }, remainingTime);
+          } else {
+            if (unoPenaltyTimer) {
+              clearTimeout(unoPenaltyTimer);
+              unoPenaltyTimer = null;
+            }
           }
         }
       }
@@ -863,7 +860,7 @@
             drawCards(room, myIdx, 2);
             player.unoTimerExpires = null;
             player.calledUno = false;
-            room.notification = `Penalty! ${player.name} failed to say UNO within 2 seconds (+2 Cards)!`;
+            room.notification = `Penalty! ${player.name} failed to say UNO within 0.5 seconds (+2 Cards)!`;
           }
         }
         return room;
@@ -952,11 +949,10 @@
         room.currentColor = chosenColor;
         room.notification = "";
 
-        // Check UNO 2-Second Trigger Rule
+        // Check UNO 0.5-Second Trigger Rule (Silent, 500ms timer)
         if (player.hand.length === 1) {
           player.calledUno = false;
-          player.unoTimerExpires = Date.now() + 2000;
-          room.notification = `⚠️ ${player.name} has 1 card left! 2 SECONDS TO SAY UNO!`;
+          player.unoTimerExpires = Date.now() + 500;
         } else {
           player.calledUno = false;
           player.unoTimerExpires = null;
