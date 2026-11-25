@@ -237,7 +237,7 @@
       <div class="dashboard-panel guide-panel">
         <h3>How to Play & Rules</h3>
         <ul class="guide-list">
-          <li><span>⚡ 0.5s UNO Penalty:</span> Hit "SAY UNO!" within 0.5 seconds of having 1 card left, or draw 2 penalty cards.</li>
+          <li><span>⚡ 1s UNO Penalty:</span> Hit "SAY UNO!" within 1 second of having 1 card left, or draw 2 penalty cards.</li>
           <li><span>🔄 2-Player Reverse:</span> Playing a Reverse card in a 2-player match acts as a Skip, giving you another turn.</li>
           <li><span>🏆 XP Progression:</span> Win matches and accumulate points from leftover opponent hands to rank up your profile level.</li>
           <li><span>🤖 Solo Mode:</span> Choose "Play vs Computer" for an instant solo match against an AI bot without needing a room code.</li>
@@ -858,7 +858,7 @@
         setTimeout(runCpuTurn, 1000);
       }
 
-      // Handle UNO Button 0.5-Second Timer Rules
+      // Handle UNO Button 1-Second Timer Rules
       const unoBtn = document.getElementById('callUnoBtn');
       if (myData) {
         if (myData.calledUno) {
@@ -953,7 +953,7 @@
             drawCards(cpuGame, myIdx, 2);
             player.unoTimerExpires = null;
             player.calledUno = false;
-            cpuGame.notification = `Penalty! You failed to say UNO within 0.5 seconds (+2 Cards)!`;
+            cpuGame.notification = `Penalty! You failed to say UNO within 1 second (+2 Cards)!`;
             renderGame(cpuGame);
           }
         }
@@ -969,7 +969,7 @@
             drawCards(room, myIdx, 2);
             player.unoTimerExpires = null;
             player.calledUno = false;
-            room.notification = `Penalty! ${player.name} failed to say UNO within 0.5 seconds (+2 Cards)!`;
+            room.notification = `Penalty! ${player.name} failed to say UNO within 1 second (+2 Cards)!`;
           }
         }
         return room;
@@ -1107,9 +1107,10 @@
       room.currentColor = chosenColor;
       room.notification = "";
 
+      // Check UNO 1-Second Trigger Rule (1000ms timer)
       if (player.hand.length === 1) {
         player.calledUno = false;
-        player.unoTimerExpires = Date.now() + 500;
+        player.unoTimerExpires = Date.now() + 1000;
       } else {
         player.calledUno = false;
         player.unoTimerExpires = null;
