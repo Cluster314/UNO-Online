@@ -54,7 +54,7 @@
     .lobby-banner .uno-card.green { background-color: #4cd137; }
     .lobby-banner .uno-card.yellow { background-color: #fbc531; }
 
-    /* Properly fitted shrinking white oval for banner cards */
+    /* Shrink the white oval specifically for smaller banner cards */
     .lobby-banner .uno-card::before {
       content: ''; position: absolute; width: 44px; height: 66px; border-radius: 50%;
       background: #ffffff; transform: rotate(-28deg); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
@@ -127,7 +127,8 @@
     .hand-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 15px; min-height: 180px; padding: 20px; background: #192a56; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
 
     .players-status { display: flex; justify-content: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
-    .player-badge { padding: 8px 16px; border-radius: 20px; background: #2f3640; font-size: 0.9rem; border: 1px solid #353b48; }
+    .player-badge { padding: 8px 16px; border-radius: 20px; background: #2f3640; font-size: 0.9rem; border: 1px solid #353b48; cursor: pointer; transition: background 0.2s; }
+    .player-badge:hover { background: #353b48; border-color: #f1c40f; }
     .player-badge.active-turn { border: 2px solid #f1c40f; font-weight: bold; background: #353b48; box-shadow: 0 0 12px rgba(241, 196, 15, 0.4); }
 
     .color-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
@@ -158,6 +159,22 @@
       <button class="color-btn" style="background:#00a8ff" onclick="selectWildColor('blue')"></button>
       <button class="color-btn" style="background:#4cd137" onclick="selectWildColor('green')"></button>
       <button class="color-btn" style="background:#fbc531" onclick="selectWildColor('yellow')"></button>
+    </div>
+  </div>
+
+  <!-- User Profile Modal -->
+  <div class="color-modal" id="profileModal">
+    <div class="dashboard-panel" style="background: #222f3e; max-width: 350px; width: 90%; border: 2px solid #353b48; text-align: center;">
+      <h3 id="modalProfileName" style="color: #f1c40f; margin-bottom: 15px;">Player Profile</h3>
+      <div class="profile-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        <div class="stat-box"><span>Level</span><strong id="modalProfileLevel">1</strong></div>
+        <div class="stat-box"><span>Total XP</span><strong id="modalProfileXP">0</strong></div>
+        <div class="stat-box"><span>Played</span><strong id="modalProfilePlayed">0</strong></div>
+        <div class="stat-box"><span>Wins</span><strong id="modalProfileWins">0</strong></div>
+        <div class="stat-box"><span>Losses</span><strong id="modalProfileLosses">0</strong></div>
+        <div class="stat-box"><span>W/L Ratio</span><strong id="modalProfileRatio">0.00</strong></div>
+      </div>
+      <button onclick="closeProfileModal()" style="background: #718093; margin: 0;">Close</button>
     </div>
   </div>
 
@@ -238,7 +255,7 @@
   <!-- WAITING ROOM SCREEN -->
   <div id="waitingScreen" class="screen" style="display: none;">
     <h2>Room Code: <span id="displayRoomCode" style="color: #fbc531;">------</span></h2>
-    <p style="margin-bottom: 20px;">Waiting for players (2 to 4 Players)...</p>
+    <p style="margin-bottom: 20px;">Waiting for players (2 to 4 Players)... Click any username to view profile.</p>
     <div id="waitingPlayersList" class="players-status"></div>
     
     <div class="waiting-actions">
@@ -339,6 +356,38 @@
       'draw2': '+2',
       'wild': '★',
       'wildDraw4': '+4'
+    };
+
+    // --- PROFILE MODAL HANDLERS ---
+    window.closeProfileModal = () => {
+      document.getElementById('profileModal').style.display = 'none';
+    };
+
+    window.viewUserProfile = async (userId) => {
+      try {
+        const userSnap = await get(ref(db, `users/${userId}`));
+        if (!userSnap.exists()) return alert("User profile not found.");
+        const pData = userSnap.val();
+
+        const played = pData.gamesPlayed || 0;
+        const wins = pData.gamesWon || 0;
+        const losses = Math.max(0, played - wins);
+        let ratio = "0.00";
+        if (losses > 0) ratio = (wins / losses).toFixed(2);
+        else if (wins > 0) ratio = wins.toFixed(2);
+
+        document.getElementById('modalProfileName').innerText = pData.name || "Player";
+        document.getElementById('modalProfileLevel').innerText = Math.floor((pData.xp || 0) / 1000) + 1;
+        document.getElementById('modalProfileXP').innerText = pData.xp || 0;
+        document.getElementById('modalProfilePlayed').innerText = played;
+        document.getElementById('modalProfileWins').innerText = wins;
+        document.getElementById('modalProfileLosses').innerText = losses;
+        document.getElementById('modalProfileRatio').innerText = ratio;
+
+        document.getElementById('profileModal').style.display = 'flex';
+      } catch (err) {
+        console.error("Failed to load profile:", err);
+      }
     };
 
     // --- AUTHENTICATION ---
@@ -642,7 +691,9 @@
 
         if (room.status === "waiting") {
           document.getElementById('waitingPlayersList').innerHTML = room.players.map(p => `
-            <div class="player-badge">${p.name} ${p.id === room.hostId ? '👑' : ''}</div>
+            <div class="player-badge" onclick="viewUserProfile('${p.id}')" title="Click to view profile">
+              ${p.name} ${p.id === room.hostId ? '👑' : ''}
+            </div>
           `).join('');
           
           const isHost = room.hostId === currentUser.uid;
@@ -742,7 +793,7 @@
       document.getElementById('topCardDisplay').innerHTML = renderCardHTML(topCard);
 
       document.getElementById('gamePlayersList').innerHTML = room.players.map((p, idx) => `
-        <div class="player-badge ${idx === room.currentTurn ? 'active-turn' : ''}">
+        <div class="player-badge ${idx === room.currentTurn ? 'active-turn' : ''}" onclick="viewUserProfile('${p.id}')" title="Click to view profile">
           ${p.name} (${p.hand ? p.hand.length : 0} cards) ${p.calledUno ? '⚡UNO' : ''}
         </div>
       `).join('');
