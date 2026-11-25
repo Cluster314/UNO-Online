@@ -223,7 +223,8 @@
         </div>
 
         <div class="lobby-controls">
-          <button id="createRoomBtn" style="background: #4cd137;">Create New Room</button>
+          <button id="playVsCpuBtn" style="background: #9b59b6;">Play vs Computer</button>
+          <button id="createRoomBtn" style="background: #4cd137;">Create Online Room</button>
           <div class="join-group">
             <input type="text" id="roomCodeInput" placeholder="6-Digit Code" maxlength="6">
             <button id="joinRoomBtn" style="min-width: 120px;">Join Room</button>
@@ -239,7 +240,7 @@
           <li><span>⚡ 0.5s UNO Penalty:</span> Hit "SAY UNO!" within 0.5 seconds of having 1 card left, or draw 2 penalty cards.</li>
           <li><span>🔄 2-Player Reverse:</span> Playing a Reverse card in a 2-player match acts as a Skip, giving you another turn.</li>
           <li><span>🏆 XP Progression:</span> Win matches and accumulate points from leftover opponent hands to rank up your profile level.</li>
-          <li><span>🔗 Quick Invites:</span> Create a room and send direct room codes or links to your friends to play together instantly.</li>
+          <li><span>🤖 Solo Mode:</span> Choose "Play vs Computer" for an instant solo match against an AI bot without needing a room code.</li>
         </ul>
       </div>
     </div>
@@ -318,7 +319,7 @@
     </div>
   </div>
 
-  <!-- FIREBASE ENGINE -->
+  <!-- FIREBASE & GAME ENGINE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
     import { getDatabase, ref, set, get, update, onValue, remove, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
@@ -347,6 +348,10 @@
     let isTransitioning = false;
     let unoPenaltyTimer = null;
 
+    // Solo CPU Mode State
+    let isCpuMode = false;
+    let cpuGame = null;
+
     const SYMBOLS = {
       'skip': '⊘',
       'reverse': '⇄',
@@ -361,6 +366,18 @@
     };
 
     window.viewUserProfile = async (userId) => {
+      if (userId === 'CPU_BOT') {
+        document.getElementById('modalProfileName').innerText = "Computer Bot 🤖";
+        document.getElementById('modalProfileLevel').innerText = "99";
+        document.getElementById('modalProfileXP').innerText = "99999";
+        document.getElementById('modalProfilePlayed').innerText = "∞";
+        document.getElementById('modalProfileWins').innerText = "∞";
+        document.getElementById('modalProfileLosses').innerText = "0";
+        document.getElementById('modalProfileRatio').innerText = "∞";
+        document.getElementById('profileModal').style.display = 'flex';
+        return;
+      }
+
       try {
         const userSnap = await get(ref(db, `users/${userId}`));
         if (!userSnap.exists()) return alert("User profile not found.");
@@ -489,13 +506,20 @@
 
       if (roomFromUrl && roomFromUrl.length === 6 && currentRoomCode !== roomFromUrl) {
         await joinRoomByCode(roomFromUrl);
-      } else if (!currentRoomCode) {
+      } else if (!currentRoomCode && !isCpuMode) {
         showScreen('lobbyScreen');
       }
     }
 
     // --- CLEANUP AND DECK ENGINE ---
     async function leaveCurrentRoom() {
+      if (isCpuMode) {
+        isCpuMode = false;
+        cpuGame = null;
+        showScreen('lobbyScreen');
+        return;
+      }
+
       if (!currentRoomCode || !currentUser) return;
       if (roomListener) {
         roomListener();
@@ -575,9 +599,39 @@
       return deck.sort(() => Math.random() - 0.5);
     }
 
+    // --- CPU SOLO MODE ENGINE ---
+    document.getElementById('playVsCpuBtn').onclick = () => {
+      if (!currentUser || !userProfile) return alert("Please log in first.");
+      isCpuMode = true;
+      
+      const deck = generateDeck();
+      const playerHand = deck.splice(0, 7);
+      const cpuHand = deck.splice(0, 7);
+      
+      let initialDiscard = deck.pop();
+      while (initialDiscard.color === 'black') { deck.unshift(initialDiscard); initialDiscard = deck.pop(); }
+
+      cpuGame = {
+        status: "playing",
+        currentTurn: 0, // 0 = Player, 1 = CPU
+        currentColor: initialDiscard.color,
+        deck: deck,
+        discardPile: [initialDiscard],
+        notification: "Solo match started against Computer Bot!",
+        players: [
+          { id: currentUser.uid, name: userProfile.name, hand: playerHand, out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null },
+          { id: 'CPU_BOT', name: "Computer Bot 🤖", hand: cpuHand, out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null }
+        ]
+      };
+
+      showScreen('gameScreen');
+      renderGame(cpuGame);
+    };
+
     // CREATE ROOM & JOIN HANDLERS
     document.getElementById('createRoomBtn').onclick = async () => {
       if (!currentUser || !userProfile || !userProfile.name) return alert("Error: User state invalid.");
+      isCpuMode = false;
       await cleanupPreviousRooms();
       const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
       const roomRef = ref(db, `rooms/${roomCode}`);
@@ -595,6 +649,7 @@
     };
 
     document.getElementById('joinRoomBtn').onclick = async () => {
+      isCpuMode = false;
       const code = document.getElementById('roomCodeInput').value.trim();
       await joinRoomByCode(code);
     };
@@ -708,7 +763,6 @@
       });
     }
 
-    // Copy Room Link Handler
     document.getElementById('copyInviteLinkBtn').onclick = () => {
       const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoomCode}`;
       navigator.clipboard.writeText(inviteUrl).then(() => {
@@ -753,6 +807,7 @@
         unoPenaltyTimer = null;
       }
       currentRoomCode = null;
+      isCpuMode = false;
       window.history.replaceState({}, document.title, window.location.pathname);
       showScreen('lobbyScreen');
     }
@@ -770,7 +825,7 @@
     }
 
     function renderGame(room) {
-      document.getElementById('gameRoomCode').innerText = currentRoomCode;
+      document.getElementById('gameRoomCode').innerText = isCpuMode ? "SOLO-CPU" : currentRoomCode;
       document.getElementById('deckCount').innerText = room.deck ? room.deck.length : 0;
       
       const banner = document.getElementById('announcementBanner');
@@ -798,7 +853,12 @@
       const myData = room.players.find(p => p.id === currentUser.uid);
       const isMyTurn = room.players[room.currentTurn].id === currentUser.uid;
 
-      // Handle UNO Button 0.5-Second Timer Rules (Silent / No Reminders)
+      // Handle CPU Turn Automatically
+      if (isCpuMode && room.status === "playing" && room.players[room.currentTurn].id === 'CPU_BOT') {
+        setTimeout(runCpuTurn, 1000);
+      }
+
+      // Handle UNO Button 0.5-Second Timer Rules
       const unoBtn = document.getElementById('callUnoBtn');
       if (myData) {
         if (myData.calledUno) {
@@ -846,11 +906,60 @@
       }
     }
 
+    function runCpuTurn() {
+      if (!isCpuMode || !cpuGame || cpuGame.status !== "playing") return;
+      const cpuIdx = cpuGame.players.findIndex(p => p.id === 'CPU_BOT');
+      if (cpuGame.currentTurn !== cpuIdx) return;
+
+      const bot = cpuGame.players[cpuIdx];
+      const playableIdx = bot.hand.findIndex(c => isCardValid(c, cpuGame));
+
+      if (playableIdx !== -1) {
+        const card = bot.hand[playableIdx];
+        let chosenColor = card.color;
+        if (chosenColor === 'black') {
+          const counts = { red: 0, blue: 0, green: 0, yellow: 0 };
+          bot.hand.forEach(c => { if (counts[c.color] !== undefined) counts[c.color]++; });
+          chosenColor = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+        }
+        executePlayCard(cpuGame, cpuIdx, playableIdx, chosenColor);
+      } else {
+        const drawn = drawCards(cpuGame, cpuIdx, 1)[0];
+        if (drawn && isCardValid(drawn, cpuGame)) {
+          let chosenColor = drawn.color;
+          if (chosenColor === 'black') chosenColor = 'red';
+          const cardIdx = bot.hand.length - 1;
+          executePlayCard(cpuGame, cpuIdx, cardIdx, chosenColor);
+        } else {
+          cpuGame.notification = "Computer Bot drew a card and passed.";
+          cpuGame.currentTurn = 0;
+          renderGame(cpuGame);
+        }
+      }
+    }
+
     function triggerUnoTimerPenalty() {
       if (unoPenaltyTimer) {
         clearTimeout(unoPenaltyTimer);
         unoPenaltyTimer = null;
       }
+
+      if (isCpuMode) {
+        if (!cpuGame) return;
+        const myIdx = cpuGame.players.findIndex(p => p.id === currentUser.uid);
+        if (myIdx !== -1) {
+          const player = cpuGame.players[myIdx];
+          if (player.hand.length === 1 && !player.calledUno) {
+            drawCards(cpuGame, myIdx, 2);
+            player.unoTimerExpires = null;
+            player.calledUno = false;
+            cpuGame.notification = `Penalty! You failed to say UNO within 0.5 seconds (+2 Cards)!`;
+            renderGame(cpuGame);
+          }
+        }
+        return;
+      }
+
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
         const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
@@ -886,14 +995,23 @@
         pendingWildCardIndex = cardIndex;
         document.getElementById('colorModal').style.display = 'flex';
       } else {
-        playCard(cardIndex, card.color);
+        if (isCpuMode) {
+          executePlayCard(cpuGame, myIndex, cardIndex, card.color);
+        } else {
+          playCard(cardIndex, card.color);
+        }
       }
     }
 
     window.selectWildColor = (color) => {
       document.getElementById('colorModal').style.display = 'none';
       if (pendingWildCardIndex !== null) {
-        playCard(pendingWildCardIndex, color);
+        if (isCpuMode) {
+          const myIndex = cpuGame.players.findIndex(p => p.id === currentUser.uid);
+          executePlayCard(cpuGame, myIndex, pendingWildCardIndex, color);
+        } else {
+          playCard(pendingWildCardIndex, color);
+        }
         pendingWildCardIndex = null;
       }
     };
@@ -903,6 +1021,22 @@
         clearTimeout(unoPenaltyTimer);
         unoPenaltyTimer = null;
       }
+
+      if (isCpuMode) {
+        if (!cpuGame) return;
+        const myIdx = cpuGame.players.findIndex(p => p.id === currentUser.uid);
+        if (myIdx !== -1 && cpuGame.players[myIdx].hand.length === 1) {
+          cpuGame.players[myIdx].calledUno = true;
+          cpuGame.players[myIdx].unoTimerExpires = null;
+          cpuGame.notification = `${cpuGame.players[myIdx].name} called UNO!`;
+          renderGame(cpuGame);
+        } else {
+          cpuGame.notification = "You can only call UNO when you have exactly 1 card left!";
+          renderGame(cpuGame);
+        }
+        return;
+      }
+
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
         const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
@@ -919,6 +1053,19 @@
     };
 
     window.passTurn = () => {
+      if (isCpuMode) {
+        if (!cpuGame) return;
+        const myIdx = cpuGame.players.findIndex(p => p.id === currentUser.uid);
+        if (myIdx !== cpuGame.currentTurn) return;
+
+        const player = cpuGame.players[myIdx];
+        player.drawnPlayableId = null;
+        cpuGame.notification = `${player.name} passed their turn.`;
+        cpuGame.currentTurn = getNextPlayerIndex(cpuGame, cpuGame.currentTurn, 1);
+        renderGame(cpuGame);
+        return;
+      }
+
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
         const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
@@ -935,75 +1082,106 @@
 
     function playCard(cardIndex, chosenColor) {
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
-        if (!room) return room;
-
-        if (!room.placements) {
-          room.placements = [];
-        }
-
-        const player = room.players[room.currentTurn];
-        const card = player.hand.splice(cardIndex, 1)[0];
-
-        player.drawnPlayableId = null;
-        room.discardPile.push(card);
-        room.currentColor = chosenColor;
-        room.notification = "";
-
-        // Check UNO 0.5-Second Trigger Rule (Silent, 500ms timer)
-        if (player.hand.length === 1) {
-          player.calledUno = false;
-          player.unoTimerExpires = Date.now() + 500;
-        } else {
-          player.calledUno = false;
-          player.unoTimerExpires = null;
-        }
-
-        let turnStep = 1;
-
-        if (card.type === 'skip') {
-          turnStep = 2;
-        } 
-        else if (card.type === 'reverse') {
-          const activeCount = room.players.filter(p => !p.out).length;
-          if (activeCount === 2) {
-            turnStep = 2;
-          } else {
-            room.direction *= -1;
-          }
-        } 
-        else if (card.type === 'draw2') {
-          const targetPlayerIdx = getNextPlayerIndex(room, room.currentTurn, 1);
-          drawCards(room, targetPlayerIdx, 2);
-          turnStep = 2;
-        } 
-        else if (card.type === 'wildDraw4') {
-          const targetPlayerIdx = getNextPlayerIndex(room, room.currentTurn, 1);
-          drawCards(room, targetPlayerIdx, 4);
-          turnStep = 2;
-        }
-
-        if (player.hand.length === 0) {
-          player.out = true;
-          room.placements.push({ id: player.id, name: player.name, place: room.placements.length + 1 });
-        }
-
-        const active = room.players.filter(p => !p.out);
-        if (active.length <= 1) {
-          active.forEach(p => {
-            p.out = true;
-            room.placements.push({ id: p.id, name: p.name, place: room.placements.length + 1 });
-          });
-          room.status = "finished";
-          calculateXP(room);
-        } else {
-          advanceTurn(room, turnStep);
-        }
-
-        return room;
+        return processCardPlayLogic(room, room.currentTurn, cardIndex, chosenColor);
       });
     }
 
+    function executePlayCard(room, playerIdx, cardIndex, chosenColor) {
+      processCardPlayLogic(room, playerIdx, cardIndex, chosenColor);
+      if (room.status === "finished") {
+        showScreen('resultsScreen');
+        renderResults(room);
+      } else {
+        renderGame(room);
+      }
+    }
+
+    function processCardPlayLogic(room, turnIdx, cardIndex, chosenColor) {
+      if (!room.placements) room.placements = [];
+
+      const player = room.players[turnIdx];
+      const card = player.hand.splice(cardIndex, 1)[0];
+
+      player.drawnPlayableId = null;
+      room.discardPile.push(card);
+      room.currentColor = chosenColor;
+      room.notification = "";
+
+      if (player.hand.length === 1) {
+        player.calledUno = false;
+        player.unoTimerExpires = Date.now() + 500;
+      } else {
+        player.calledUno = false;
+        player.unoTimerExpires = null;
+      }
+
+      let turnStep = 1;
+
+      if (card.type === 'skip') {
+        turnStep = 2;
+      } 
+      else if (card.type === 'reverse') {
+        const activeCount = room.players.filter(p => !p.out).length;
+        if (activeCount === 2) {
+          turnStep = 2;
+        } else {
+          room.direction = (room.direction || 1) * -1;
+        }
+      } 
+      else if (card.type === 'draw2') {
+        const targetPlayerIdx = getNextPlayerIndex(room, turnIdx, 1);
+        drawCards(room, targetPlayerIdx, 2);
+        turnStep = 2;
+      } 
+      else if (card.type === 'wildDraw4') {
+        const targetPlayerIdx = getNextPlayerIndex(room, turnIdx, 1);
+        drawCards(room, targetPlayerIdx, 4);
+        turnStep = 2;
+      }
+
+      if (player.hand.length === 0) {
+        player.out = true;
+        room.placements.push({ id: player.id, name: player.name, place: room.placements.length + 1 });
+      }
+
+      const active = room.players.filter(p => !p.out);
+      if (active.length <= 1) {
+        active.forEach(p => {
+          p.out = true;
+          room.placements.push({ id: p.id, name: p.name, place: room.placements.length + 1 });
+        });
+        room.status = "finished";
+        if (!isCpuMode) calculateXP(room);
+        else calculateCpuXP(room);
+      } else {
+        room.currentTurn = getNextPlayerIndex(room, room.currentTurn, turnStep);
+      }
+
+      return room;
+    }
+
     window.handleDrawClick = () => {
+      if (isCpuMode) {
+        if (!cpuGame) return;
+        const myIdx = cpuGame.players.findIndex(p => p.id === currentUser.uid);
+        if (myIdx !== cpuGame.currentTurn) return;
+
+        const player = cpuGame.players[myIdx];
+        if (player.drawnPlayableId !== null && player.drawnPlayableId !== undefined) return;
+
+        const drawnCard = drawCards(cpuGame, myIdx, 1)[0];
+        if (drawnCard && isCardValid(drawnCard, cpuGame)) {
+          player.drawnPlayableId = drawnCard.id;
+          cpuGame.notification = `${player.name} drew a playable card! Choose to play or pass.`;
+        } else {
+          player.drawnPlayableId = null;
+          cpuGame.notification = `${player.name} drew a card. Turn passed.`;
+          cpuGame.currentTurn = getNextPlayerIndex(cpuGame, cpuGame.currentTurn, 1);
+        }
+        renderGame(cpuGame);
+        return;
+      }
+
       runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
         if (!room) return room;
         const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
@@ -1054,8 +1232,9 @@
     function getNextPlayerIndex(room, current, step = 1) {
       let count = 0;
       let target = current;
+      const dir = room.direction || 1;
       while (count < step) {
-        target = (target + room.direction + room.players.length) % room.players.length;
+        target = (target + dir + room.players.length) % room.players.length;
         if (!room.players[target].out) count++;
       }
       return target;
@@ -1063,6 +1242,41 @@
 
     function advanceTurn(room, step = 1) {
       room.currentTurn = getNextPlayerIndex(room, room.currentTurn, step);
+    }
+
+    function calculateCpuXP(room) {
+      const handPoints = {};
+      room.players.forEach(p => {
+        handPoints[p.id] = (p.hand || []).reduce((a, b) => a + (b.points || 0), 0);
+      });
+
+      room.finalResults = room.players.map(player => {
+        const placementEntry = room.placements.find(p => p.id === player.id);
+        const place = placementEntry ? placementEntry.place : room.players.length;
+
+        let baseXP = 25;
+        let bonusXP = 0;
+
+        if (place === 1) {
+          baseXP = 100;
+          bonusXP = Object.values(handPoints).reduce((a, b) => a + b, 0);
+        }
+
+        return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
+      });
+
+      // Update Firebase user stats for the human player
+      const humanRes = room.finalResults.find(r => r.id === currentUser.uid);
+      if (humanRes) {
+        runTransaction(ref(db, `users/${currentUser.uid}`), (u) => {
+          if (!u) return u;
+          u.gamesPlayed = (u.gamesPlayed || 0) + 1;
+          if (humanRes.place === 1) u.gamesWon = (u.gamesWon || 0) + 1;
+          u.xp = (u.xp || 0) + humanRes.totalXP;
+          u.level = Math.floor(u.xp / 1000) + 1;
+          return u;
+        });
+      }
     }
 
     function calculateXP(room) {
@@ -1091,6 +1305,7 @@
       });
 
       room.finalResults.forEach(res => {
+        if (res.id === 'CPU_BOT') return;
         runTransaction(ref(db, `users/${res.id}`), (u) => {
           if (!u) return u;
           u.gamesPlayed = (u.gamesPlayed || 0) + 1;
