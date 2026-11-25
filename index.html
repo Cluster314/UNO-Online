@@ -486,26 +486,38 @@
     }
 
     document.getElementById('sendFriendReqBtn').onclick = async () => {
+      if (!currentUser || !currentUser.uid) {
+        return alert("You must be logged in to send friend requests.");
+      }
+
       const searchName = document.getElementById('friendSearchInput').value.trim();
       if (!searchName) return alert("Please enter a username.");
       if (searchName === userProfile.name) return alert("You cannot add yourself.");
 
-      const usersSnap = await get(ref(db, 'users'));
-      if (!usersSnap.exists()) return alert("User not found.");
+      try {
+        const usersSnap = await get(ref(db, 'users'));
+        if (!usersSnap.exists()) return alert("User database empty.");
 
-      let targetUid = null;
-      usersSnap.forEach(child => {
-        if (child.val().name === searchName) targetUid = child.key;
-      });
+        let targetUid = null;
+        usersSnap.forEach(child => {
+          if (child.val().name === searchName) {
+            targetUid = child.key;
+          }
+        });
 
-      if (!targetUid) return alert("User not found.");
+        if (!targetUid) return alert(`User "${searchName}" not found.`);
 
-      await set(ref(db, `friends/${targetUid}/requests/${currentUser.uid}`), {
-        name: userProfile.name
-      });
+        await set(ref(db, `friends/${targetUid}/requests/${currentUser.uid}`), {
+          name: userProfile.name,
+          timestamp: Date.now()
+        });
 
-      alert(`Friend request sent to ${searchName}!`);
-      document.getElementById('friendSearchInput').value = '';
+        alert(`Friend request sent to ${searchName}!`);
+        document.getElementById('friendSearchInput').value = '';
+      } catch (err) {
+        console.error("Friend request failed:", err);
+        alert(`Could not send request: ${err.message}`);
+      }
     };
 
     window.acceptFriend = async (friendUid, friendName) => {
@@ -890,7 +902,6 @@
           unoBtn.className = "uno-btn warning";
           unoBtn.innerText = "PRESS UNO NOW! (2s)";
           
-          // Clear any local existing timer
           if (unoPenaltyTimer) clearTimeout(unoPenaltyTimer);
           const remainingTime = Math.max(0, myData.unoTimerExpires - Date.now());
           
