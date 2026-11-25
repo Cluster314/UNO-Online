@@ -23,17 +23,8 @@
     button { background: #e74c3c; color: white; font-weight: bold; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     button:hover { background: #c0392b; transform: translateY(-2px); }
 
-    .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .lobby-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
     .join-group { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 320px; }
-
-    /* Friends System Styles */
-    .friends-container { background: #2f3640; border-radius: 10px; padding: 16px; margin: 20px 0; border: 1px solid #353b48; text-align: left; }
-    .friends-list-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; }
-    .friend-item { display: flex; justify-content: space-between; align-items: center; background: #353b48; padding: 8px 12px; border-radius: 6px; }
-    .friend-actions { display: flex; gap: 6px; }
-    .friend-actions button { padding: 4px 8px; font-size: 0.8rem; margin: 0; width: auto; }
-    .friend-name-clickable { cursor: pointer; text-decoration: underline; color: #00a8ff; font-weight: bold; }
-    .friend-name-clickable:hover { color: #f1c40f; }
 
     .waiting-actions { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 20px auto 0 auto; width: 100%; max-width: 450px; }
     .waiting-actions button { flex: 1; margin: 0; }
@@ -84,13 +75,10 @@
     .player-badge { padding: 8px 16px; border-radius: 20px; background: #2f3640; font-size: 0.9rem; border: 1px solid #353b48; }
     .player-badge.active-turn { border: 2px solid #f1c40f; font-weight: bold; background: #353b48; box-shadow: 0 0 12px rgba(241, 196, 15, 0.4); }
 
-    .color-modal, .profile-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
+    .color-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
     .color-picker { background: #2f3640; padding: 24px; border-radius: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border: 2px solid #353b48; }
     .color-btn { width: 90px; height: 90px; border-radius: 12px; border: 3px solid #fff; cursor: pointer; transition: transform 0.2s; }
     .color-btn:hover { transform: scale(1.1); }
-
-    .profile-modal-content { background: #2f3640; padding: 24px; border-radius: 16px; border: 2px solid #353b48; text-align: center; width: 90%; max-width: 400px; }
-    .profile-modal-content .profile-card { margin-top: 15px; margin-bottom: 15px; }
 
     .action-bar { display: flex; justify-content: center; gap: 12px; margin-top: 10px; }
     .action-bar button { width: auto; min-width: 130px; margin: 0; }
@@ -115,22 +103,6 @@
       <button class="color-btn" style="background:#00a8ff" onclick="selectWildColor('blue')"></button>
       <button class="color-btn" style="background:#4cd137" onclick="selectWildColor('green')"></button>
       <button class="color-btn" style="background:#fbc531" onclick="selectWildColor('yellow')"></button>
-    </div>
-  </div>
-
-  <!-- Friend Profile Modal -->
-  <div class="profile-modal" id="friendProfileModal">
-    <div class="profile-modal-content">
-      <h2 id="modalFriendName">Friend Profile</h2>
-      <div class="profile-card">
-        <div>Level: <strong id="modalFriendLevel">1</strong></div>
-        <div>XP: <strong id="modalFriendXP">0</strong></div>
-        <div>Played: <strong id="modalFriendPlayed">0</strong></div>
-        <div>Wins: <strong id="modalFriendWins">0</strong></div>
-        <div>Losses: <strong id="modalFriendLosses">0</strong></div>
-        <div>W/L Ratio: <strong id="modalFriendRatio">0.00</strong></div>
-      </div>
-      <button onclick="closeFriendProfileModal()" style="background: #718093; max-width: 150px; margin: 0 auto;">Close</button>
     </div>
   </div>
 
@@ -175,28 +147,8 @@
         <input type="text" id="roomCodeInput" placeholder="6-Digit Code" maxlength="6">
         <button id="joinRoomBtn">Join</button>
       </div>
+      <button id="logoutBtn" style="background: #718093; max-width: 320px; margin-top: 15px;">Log Out</button>
     </div>
-
-    <!-- FRIENDS SYSTEM SECTION -->
-    <div class="friends-container">
-      <h3>Friends</h3>
-      <div style="display: flex; gap: 8px;">
-        <input type="text" id="friendSearchInput" placeholder="Enter Exact Username">
-        <button id="sendFriendReqBtn" style="background: #00a8ff; width: auto;">Add Friend</button>
-      </div>
-      
-      <div style="margin-top: 12px;">
-        <strong style="font-size: 0.85rem; color: #f1c40f;">Pending Requests</strong>
-        <div id="pendingRequestsList" class="friends-list-group"></div>
-      </div>
-
-      <div style="margin-top: 12px;">
-        <strong style="font-size: 0.85rem; color: #4cd137;">Friend List</strong>
-        <div id="friendsList" class="friends-list-group"></div>
-      </div>
-    </div>
-
-    <button id="logoutBtn" style="background: #718093; max-width: 320px; margin-top: 10px;">Log Out</button>
 
     <div class="game-credits">
       UNO® is a registered trademark created by Merle Robbins (1971) and owned by Mattel, Inc.
@@ -373,7 +325,6 @@
             await set(userRef, userProfile);
           }
           updateProfileUI();
-          listenToFriendsData();
           checkUrlRoomJoin();
         });
       } else {
@@ -416,179 +367,6 @@
         showScreen('lobbyScreen');
       }
     }
-
-    // --- FRIENDS SYSTEM LOGIC ---
-    function listenToFriendsData() {
-      if (!currentUser) return;
-
-      onValue(ref(db, `friends/${currentUser.uid}/requests`), (snapshot) => {
-        const requests = snapshot.val() || {};
-        const container = document.getElementById('pendingRequestsList');
-        container.innerHTML = '';
-
-        Object.keys(requests).forEach(reqUid => {
-          const name = requests[reqUid].name;
-          const div = document.createElement('div');
-          div.className = 'friend-item';
-          div.innerHTML = `
-            <span>${name}</span>
-            <div class="friend-actions">
-              <button style="background: #4cd137;" onclick="acceptFriend('${reqUid}', '${name}')">Accept</button>
-              <button style="background: #e74c3c;" onclick="declineFriend('${reqUid}')">Decline</button>
-            </div>
-          `;
-          container.appendChild(div);
-        });
-
-        if (Object.keys(requests).length === 0) {
-          container.innerHTML = `<span style="font-size: 0.8rem; color: #8c96a0;">No pending requests</span>`;
-        }
-      });
-
-      onValue(ref(db, `friends/${currentUser.uid}/list`), async (snapshot) => {
-        const friends = snapshot.val() || {};
-        const container = document.getElementById('friendsList');
-        container.innerHTML = '';
-
-        const friendUids = Object.keys(friends);
-
-        for (const fUid of friendUids) {
-          const name = friends[fUid].name;
-
-          let isJoinable = false;
-          const friendSnap = await get(ref(db, `users/${fUid}`));
-          if (friendSnap.exists()) {
-            const friendData = friendSnap.val();
-            if (friendData.currentRoom) {
-              const roomSnap = await get(ref(db, `rooms/${friendData.currentRoom}`));
-              if (roomSnap.exists() && roomSnap.val().status === 'waiting') {
-                isJoinable = true;
-              }
-            }
-          }
-
-          const div = document.createElement('div');
-          div.className = 'friend-item';
-          div.innerHTML = `
-            <span class="friend-name-clickable" onclick="viewFriendProfile('${fUid}')">${name}</span>
-            <div class="friend-actions">
-              ${isJoinable ? `<button style="background: #00a8ff;" onclick="joinFriendGame('${fUid}')">Join Room</button>` : ''}
-              <button style="background: #e74c3c;" onclick="removeFriend('${fUid}')">Unfriend</button>
-            </div>
-          `;
-          container.appendChild(div);
-        }
-
-        if (friendUids.length === 0) {
-          container.innerHTML = `<span style="font-size: 0.8rem; color: #8c96a0;">No friends added yet</span>`;
-        }
-      });
-    }
-
-    document.getElementById('sendFriendReqBtn').onclick = async () => {
-      if (!currentUser || !currentUser.uid) {
-        return alert("You must be logged in to send friend requests.");
-      }
-
-      const searchName = document.getElementById('friendSearchInput').value.trim();
-      if (!searchName) return alert("Please enter a username.");
-      if (searchName === userProfile.name) return alert("You cannot add yourself.");
-
-      try {
-        const usersSnap = await get(ref(db, 'users'));
-        if (!usersSnap.exists()) return alert("User database empty.");
-
-        let targetUid = null;
-        usersSnap.forEach(child => {
-          if (child.val().name === searchName) {
-            targetUid = child.key;
-          }
-        });
-
-        if (!targetUid) return alert(`User "${searchName}" not found.`);
-
-        await set(ref(db, `friends/${targetUid}/requests/${currentUser.uid}`), {
-          name: userProfile.name,
-          timestamp: Date.now()
-        });
-
-        alert(`Friend request sent to ${searchName}!`);
-        document.getElementById('friendSearchInput').value = '';
-      } catch (err) {
-        console.error("Friend request failed:", err);
-        alert(`Could not send request: ${err.message}`);
-      }
-    };
-
-    window.acceptFriend = async (friendUid, friendName) => {
-      await set(ref(db, `friends/${currentUser.uid}/list/${friendUid}`), { name: friendName });
-      await set(ref(db, `friends/${friendUid}/list/${currentUser.uid}`), { name: userProfile.name });
-      await remove(ref(db, `friends/${currentUser.uid}/requests/${friendUid}`));
-    };
-
-    window.declineFriend = async (friendUid) => {
-      await remove(ref(db, `friends/${currentUser.uid}/requests/${friendUid}`));
-    };
-
-    window.removeFriend = async (friendUid) => {
-      if (!currentUser) return;
-      if (confirm("Are you sure you want to remove this friend?")) {
-        try {
-          await remove(ref(db, `friends/${currentUser.uid}/list/${friendUid}`));
-          await remove(ref(db, `friends/${friendUid}/list/${currentUser.uid}`));
-        } catch (err) {
-          alert("Error removing friend: " + err.message);
-        }
-      }
-    };
-
-    window.viewFriendProfile = async (friendUid) => {
-      try {
-        const friendSnap = await get(ref(db, `users/${friendUid}`));
-        if (!friendSnap.exists()) return alert("Unable to load profile.");
-
-        const data = friendSnap.val();
-        const played = data.gamesPlayed || 0;
-        const wins = data.gamesWon || 0;
-        const losses = Math.max(0, played - wins);
-        let ratio = "0.00";
-        if (losses > 0) {
-          ratio = (wins / losses).toFixed(2);
-        } else if (wins > 0) {
-          ratio = wins.toFixed(2);
-        }
-
-        document.getElementById('modalFriendName').innerText = data.name || "Friend Profile";
-        document.getElementById('modalFriendLevel').innerText = Math.floor((data.xp || 0) / 1000) + 1;
-        document.getElementById('modalFriendXP').innerText = data.xp || 0;
-        document.getElementById('modalFriendPlayed').innerText = played;
-        document.getElementById('modalFriendWins').innerText = wins;
-        document.getElementById('modalFriendLosses').innerText = losses;
-        document.getElementById('modalFriendRatio').innerText = ratio;
-
-        document.getElementById('friendProfileModal').style.display = 'flex';
-      } catch (err) {
-        alert("Error viewing profile: " + err.message);
-      }
-    };
-
-    window.closeFriendProfileModal = () => {
-      document.getElementById('friendProfileModal').style.display = 'none';
-    };
-
-    window.joinFriendGame = async (friendUid) => {
-      try {
-        const friendSnap = await get(ref(db, `users/${friendUid}`));
-        if (!friendSnap.exists()) return alert("Friend user missing.");
-        
-        const friendData = friendSnap.val();
-        if (!friendData.currentRoom) return alert("This friend is not currently in a room.");
-
-        await joinRoomByCode(friendData.currentRoom);
-      } catch (err) {
-        alert("Error joining friend: " + err.message);
-      }
-    };
 
     // --- CLEANUP AND DECK ENGINE ---
     async function leaveCurrentRoom() {
