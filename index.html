@@ -1265,7 +1265,6 @@
         return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
       });
 
-      // Update Firebase user stats for the human player
       const humanRes = room.finalResults.find(r => r.id === currentUser.uid);
       if (humanRes) {
         runTransaction(ref(db, `users/${currentUser.uid}`), (u) => {
@@ -1323,7 +1322,9 @@
 
     function renderResults(room) {
       if (!room.finalResults) return;
-      document.getElementById('resultsTableBody').innerHTML = room.finalResults.map(r => `
+      const sortedResults = [...room.finalResults].sort((a, b) => a.place - b.place);
+
+      document.getElementById('resultsTableBody').innerHTML = sortedResults.map(r => `
         <tr>
           <td>#${r.place}</td>
           <td>${r.name}</td>
