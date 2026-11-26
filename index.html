@@ -75,9 +75,9 @@
 
     /* Guide Panel */
     .guide-panel h3 { color: #f1c40f; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 16px; }
-    .guide-list { list-style: none; display: flex; flex-direction: column; gap: 16px; font-size: 0.95rem; color: #dcdde1; }
-    .guide-list li { display: flex; align-items: flex-start; gap: 12px; }
-    .guide-list span { color: #4cd137; font-weight: bold; min-width: 150px; }
+    .guide-list { list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 0.9rem; color: #dcdde1; max-height: 420px; overflow-y: auto; padding-right: 5px; }
+    .guide-list li { display: flex; align-items: flex-start; gap: 10px; }
+    .guide-list span { color: #4cd137; font-weight: bold; min-width: 140px; }
 
     .waiting-actions { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 20px auto 0 auto; width: 100%; max-width: 500px; }
     .waiting-actions button { flex: 1; margin: 0; }
@@ -235,12 +235,17 @@
 
       <!-- Right Panel: Rules & Guide -->
       <div class="dashboard-panel guide-panel">
-        <h3>How to Play & Rules</h3>
+        <h3>How to Play & Official Rules</h3>
         <ul class="guide-list">
           <li><span>⚡ 1s UNO Penalty:</span> Hit "SAY UNO!" within 1 second of having 1 card left, or draw 2 penalty cards.</li>
-          <li><span>🔄 2-Player Reverse:</span> Playing a Reverse card in a 2-player match acts as a Skip, giving you another turn.</li>
-          <li><span>🏆 XP Progression:</span> Win matches and accumulate points from leftover opponent hands to rank up your profile level.</li>
-          <li><span>🤖 Solo Mode:</span> Choose "Play vs Computer" for an instant solo match against RoboRobbins 🤖 starting fresh at Level 1.</li>
+          <li><span>🎯 Objective:</span> Be the first player to empty your hand of all cards.</li>
+          <li><span>🃏 Matching:</span> Match the top card of the Discard Pile by color, number, or symbol.</li>
+          <li><span>📥 Drawing:</span> If you have no playable cards, draw 1 card. If playable, you can play it or pass.</li>
+          <li><span>⊘ Skip Card:</span> The next player in rotation loses their turn.</li>
+          <li><span>⇄ Reverse Card:</span> Reverses play direction. In 2-player matches, it acts as a Skip.</li>
+          <li><span>＋2 Draw Two:</span> Forces the next player to draw 2 cards and lose their turn.</li>
+          <li><span>★ Wild & +4:</span> Play anytime to choose active color (and force next player to draw 4 on Wild Draw 4).</li>
+          <li><span>🤖 Solo Mode:</span> Play against RoboRobbins 🤖 starting fresh at Level 1 with full stat saving!</li>
         </ul>
       </div>
     </div>
