@@ -1279,23 +1279,29 @@
       const humanRes = room.finalResults.find(r => r.id === currentUser.uid);
       if (humanRes) {
         runTransaction(ref(db, `users/${currentUser.uid}`), (u) => {
-          if (!u) return u;
-          u.gamesPlayed = (u.gamesPlayed || 0) + 1;
-          if (humanRes.place === 1) u.gamesWon = (u.gamesWon || 0) + 1;
-          u.xp = (u.xp || 0) + humanRes.totalXP;
+          if (!u || typeof u !== 'object') {
+            u = { name: userProfile.name, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
+          }
+          u.gamesPlayed = (Number(u.gamesPlayed) || 0) + 1;
+          if (humanRes.place === 1) u.gamesWon = (Number(u.gamesWon) || 0) + 1;
+          u.xp = (Number(u.xp) || 0) + humanRes.totalXP;
           u.level = Math.floor(u.xp / 1000) + 1;
           return u;
         });
       }
 
-      // Update Bot (RoboRobbins) Stats in Firebase
+      // Update Bot (RoboRobbins) Stats with Robust Transaction Handling
       const botRes = room.finalResults.find(r => r.id === BOT_USER_ID);
       if (botRes) {
         runTransaction(ref(db, `users/${BOT_USER_ID}`), (b) => {
-          if (!b) return { name: "RoboRobbins 🤖", xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
-          b.gamesPlayed = (b.gamesPlayed || 0) + 1;
-          if (botRes.place === 1) b.gamesWon = (b.gamesWon || 0) + 1;
-          b.xp = (b.xp || 0) + botRes.totalXP;
+          if (!b || typeof b !== 'object') {
+            b = { name: "RoboRobbins 🤖", xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
+          }
+          b.gamesPlayed = (Number(b.gamesPlayed) || 0) + 1;
+          if (botRes.place === 1) {
+            b.gamesWon = (Number(b.gamesWon) || 0) + 1;
+          }
+          b.xp = (Number(b.xp) || 0) + botRes.totalXP;
           b.level = Math.floor(b.xp / 1000) + 1;
           return b;
         });
@@ -1329,14 +1335,16 @@
 
       room.finalResults.forEach(res => {
         runTransaction(ref(db, `users/${res.id}`), (u) => {
-          if (!u) return u;
-          u.gamesPlayed = (u.gamesPlayed || 0) + 1;
+          if (!u || typeof u !== 'object') {
+            u = { name: res.name, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
+          }
+          u.gamesPlayed = (Number(u.gamesPlayed) || 0) + 1;
           
           if (res.place === 1) {
-            u.gamesWon = (u.gamesWon || 0) + 1;
+            u.gamesWon = (Number(u.gamesWon) || 0) + 1;
           }
 
-          u.xp = (u.xp || 0) + res.totalXP;
+          u.xp = (Number(u.xp) || 0) + res.totalXP;
           u.level = Math.floor(u.xp / 1000) + 1;
           return u;
         });
