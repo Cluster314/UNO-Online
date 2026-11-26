@@ -240,7 +240,7 @@
           <li><span>⚡ 1s UNO Penalty:</span> Hit "SAY UNO!" within 1 second of having 1 card left, or draw 2 penalty cards.</li>
           <li><span>🔄 2-Player Reverse:</span> Playing a Reverse card in a 2-player match acts as a Skip, giving you another turn.</li>
           <li><span>🏆 XP Progression:</span> Win matches and accumulate points from leftover opponent hands to rank up your profile level.</li>
-          <li><span>🤖 Solo Mode:</span> Choose "Play vs Computer" for an instant solo match against RoboRobbins 🤖 without needing a room code.</li>
+          <li><span>🤖 Solo Mode:</span> Choose "Play vs Computer" for an instant solo match against RoboRobbins 🤖 starting fresh at Level 1.</li>
         </ul>
       </div>
     </div>
@@ -361,17 +361,17 @@
       'wildDraw4': '+4'
     };
 
-    // --- INITIALIZE BOT PROFILE IN FIREBASE ---
+    // --- INITIALIZE BOT PROFILE IN FIREBASE (LEVEL 1 / 0 XP) ---
     async function ensureBotProfileExists() {
       const botRef = ref(db, `users/${BOT_USER_ID}`);
       const snap = await get(botRef);
       if (!snap.exists()) {
         await set(botRef, {
           name: "RoboRobbins 🤖",
-          xp: 5000,
-          level: 6,
-          gamesPlayed: 100,
-          gamesWon: 65,
+          xp: 0,
+          level: 1,
+          gamesPlayed: 0,
+          gamesWon: 0,
           currentRoom: null
         });
       }
@@ -1292,7 +1292,7 @@
       const botRes = room.finalResults.find(r => r.id === BOT_USER_ID);
       if (botRes) {
         runTransaction(ref(db, `users/${BOT_USER_ID}`), (b) => {
-          if (!b) return b;
+          if (!b) return { name: "RoboRobbins 🤖", xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
           b.gamesPlayed = (b.gamesPlayed || 0) + 1;
           if (botRes.place === 1) b.gamesWon = (b.gamesWon || 0) + 1;
           b.xp = (b.xp || 0) + botRes.totalXP;
