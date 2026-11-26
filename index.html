@@ -3,23 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Online UNO - Arcade Edition</title>
+  <title>Online UNO - Account System</title>
   
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e74c3c'/><path d='M20 80 L80 20 L80 80 Z' fill='%23f1c40f'/><circle cx='50' cy='50' r='25' fill='%233498db'/><text x='50' y='58' font-size='22' font-weight='bold' font-family='sans-serif' text-anchor='middle' fill='white'>UNO</text></svg>">
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
-    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 15px; }
+    body { background-color: #1b262c; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 15px; }
     
-    /* Full-Width Fluid Screen Layout with Game Polish */
-    .screen { width: 100%; width: 100vw; min-height: calc(100vh - 30px); background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 16px; padding: 24px 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); text-align: center; border: 1px solid rgba(255,255,255,0.08); position: relative; margin: 0 auto; display: flex; flex-direction: column; justify-content: space-between; }
+    /* Full-Width Fluid Screen Layout */
+    .screen { width: 100%; width: 100vw; min-height: calc(100vh - 30px); background: #222f3e; border-radius: 12px; padding: 24px 30px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); text-align: center; border: 1px solid rgba(255,255,255,0.05); position: relative; margin: 0 auto; display: flex; flex-direction: column; justify-content: space-between; }
     
     #authScreen, #resultsScreen { max-width: 600px; margin: auto; min-height: auto; }
 
-    h1, h2, h3 { margin-bottom: 16px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-    h1 { background: linear-gradient(90deg, #f59e0b, #ef4444, #3b82f6, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5rem; }
+    h1, h2, h3 { margin-bottom: 16px; font-weight: 800; letter-spacing: 1px; }
     
-    .auth-box { display: flex; flex-direction: column; width: 100%; max-width: 360px; margin: 0 auto; gap: 12px; }
+    .auth-box { display: flex; flex-direction: column; width: 100%; max-width: 360px; margin: 0 auto; gap: 10px; }
     
     /* Multi-Column Lobby Grid */
     .lobby-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 10px; flex-grow: 1; }
@@ -27,50 +26,42 @@
       .lobby-grid { grid-template-columns: 1fr 1fr; text-align: left; }
     }
 
-    .dashboard-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border-radius: 14px; padding: 24px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); }
+    .dashboard-panel { background: #2f3640; border-radius: 12px; padding: 24px; border: 1px solid #353b48; display: flex; flex-direction: column; justify-content: space-between; }
     
-    .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 15px; }
-    .stat-box { background: rgba(15, 23, 42, 0.6); padding: 12px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.04); }
-    .stat-box span { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; display: block; letter-spacing: 0.5px; }
-    .stat-box strong { font-size: 1.2rem; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.3); }
+    .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat-box { background: #353b48; padding: 12px; border-radius: 8px; text-align: center; }
+    .stat-box span { font-size: 0.75rem; color: #8c96a0; text-transform: uppercase; display: block; }
+    .stat-box strong { font-size: 1.2rem; color: #f1c40f; }
 
-    /* XP Progress Bar Styling */
-    .xp-progress-container { background: rgba(15, 23, 42, 0.8); border-radius: 10px; padding: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.04); text-align: left; }
-    .xp-info-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; font-weight: bold; }
-    .xp-bar-bg { width: 100%; height: 10px; background: #0f172a; border-radius: 5px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
-    .xp-bar-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #10b981); width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+    input, button { padding: 14px 18px; font-size: 1rem; border-radius: 8px; border: none; outline: none; margin: 6px 0; }
+    input { background: #ecf0f1; color: #2c3e50; text-align: center; font-weight: bold; width: 100%; }
+    button { background: #e74c3c; color: white; font-weight: bold; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    button:hover { background: #c0392b; transform: translateY(-2px); }
 
-    input, button { padding: 14px 18px; font-size: 1rem; border-radius: 10px; border: none; outline: none; margin: 6px 0; font-weight: bold; }
-    input { background: #334155; color: #f8fafc; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
-    input:focus { border-color: #3b82f6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); }
-    
-    button { background: #ef4444; color: white; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4); text-transform: uppercase; letter-spacing: 0.5px; }
-    button:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6); }
-
-    .lobby-controls { display: flex; flex-direction: column; gap: 10px; }
+    .lobby-controls { display: flex; flex-direction: column; gap: 12px; }
     .join-group { display: flex; gap: 10px; width: 100%; }
 
     /* Floating Animated Header Cards */
-    .lobby-banner { display: flex; justify-content: center; gap: 16px; margin-bottom: 10px; }
+    .lobby-banner { display: flex; justify-content: center; gap: 16px; margin-bottom: 15px; }
     .lobby-banner .uno-card {
-      width: 65px; height: 95px; border-radius: 8px; border: 3px solid #ffffff;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.5); position: relative; display: flex;
+      width: 70px; height: 105px; border-radius: 8px; border: 3px solid #ffffff;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4); position: relative; display: flex;
       justify-content: center; align-items: center; pointer-events: none;
       animation: floatCard 3s ease-in-out infinite alternate; overflow: hidden;
     }
-    .lobby-banner .uno-card.red { background-color: #ef4444; }
-    .lobby-banner .uno-card.blue { background-color: #3b82f6; }
-    .lobby-banner .uno-card.green { background-color: #10b981; }
-    .lobby-banner .uno-card.yellow { background-color: #fbbf24; }
+    .lobby-banner .uno-card.red { background-color: #e84118; }
+    .lobby-banner .uno-card.blue { background-color: #00a8ff; }
+    .lobby-banner .uno-card.green { background-color: #4cd137; }
+    .lobby-banner .uno-card.yellow { background-color: #fbc531; }
 
     .lobby-banner .uno-card::before {
-      content: ''; position: absolute; width: 40px; height: 60px; border-radius: 50%;
+      content: ''; position: absolute; width: 44px; height: 66px; border-radius: 50%;
       background: #ffffff; transform: rotate(-28deg); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
     }
 
     .lobby-banner .uno-card .card-value {
-      position: relative; z-index: 2; font-size: 1.5rem; font-weight: 900; font-style: italic;
-      color: #1e293b; transform: skewX(-5deg); text-shadow: 1px 1px 0px rgba(255,255,255,0.6);
+      position: relative; z-index: 2; font-size: 1.6rem; font-weight: 900; font-style: italic;
+      color: #2f3640; transform: skewX(-5deg); text-shadow: 1px 1px 0px rgba(255,255,255,0.6);
     }
     
     .lobby-banner .uno-card:nth-child(2) { animation-delay: 0.4s; }
@@ -79,86 +70,81 @@
 
     @keyframes floatCard {
       0% { transform: translateY(0) rotate(-6deg); }
-      100% { transform: translateY(-10px) rotate(6deg); }
+      100% { transform: translateY(-8px) rotate(6deg); }
     }
 
     /* Guide Panel */
-    .guide-panel h3 { color: #fbbf24; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 12px; }
-    .guide-list { list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem; color: #cbd5e1; max-height: 380px; overflow-y: auto; padding-right: 5px; }
-    .guide-list li { display: flex; align-items: flex-start; gap: 8px; }
-    .guide-list span { color: #34d399; font-weight: bold; min-width: 130px; }
+    .guide-panel h3 { color: #f1c40f; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 16px; }
+    .guide-list { list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 0.9rem; color: #dcdde1; max-height: 420px; overflow-y: auto; padding-right: 5px; }
+    .guide-list li { display: flex; align-items: flex-start; gap: 10px; }
+    .guide-list span { color: #4cd137; font-weight: bold; min-width: 140px; }
 
     .waiting-actions { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 20px auto 0 auto; width: 100%; max-width: 500px; }
     .waiting-actions button { flex: 1; margin: 0; }
 
-    .game-header { display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.8); padding: 14px 24px; border-radius: 12px; margin-bottom: 15px; font-weight: bold; border: 1px solid rgba(255,255,255,0.08); }
-    
-    .table-area { display: flex; justify-content: center; align-items: center; gap: 50px; margin: 15px 0; background: radial-gradient(circle, #3b82f6 0%, #1e3a8a 70%, #0f172a 100%); padding: 35px; border-radius: 20px; border: 4px solid rgba(255,255,255,0.15); box-shadow: inset 0 0 30px rgba(0,0,0,0.6); }
+    .game-header { display: flex; justify-content: space-between; align-items: center; background: #2f3640; padding: 14px 24px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
+    .table-area { display: flex; justify-content: center; align-items: center; gap: 50px; margin: 20px 0; background: radial-gradient(circle, #273c75 0%, #192a56 100%); padding: 35px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.1); }
     
     .uno-card {
-      width: 90px; height: 135px; border-radius: 12px; border: 4px solid #ffffff;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative; display: flex;
+      width: 90px; height: 135px; border-radius: 10px; border: 4px solid #ffffff;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4); position: relative; display: flex;
       justify-content: center; align-items: center; cursor: pointer;
-      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease; background: #111; overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease; background: #111; overflow: hidden;
     }
-    .uno-card:hover { transform: translateY(-12px) scale(1.08); box-shadow: 0 18px 35px rgba(0,0,0,0.7); z-index: 10; }
-    .uno-card.red { background-color: #ef4444; }
-    .uno-card.blue { background-color: #3b82f6; }
-    .uno-card.green { background-color: #10b981; }
-    .uno-card.yellow { background-color: #fbbf24; }
-    .uno-card.black { background-color: #1e293b; }
+    .uno-card:hover { transform: translateY(-10px) scale(1.05); box-shadow: 0 12px 24px rgba(0,0,0,0.6); z-index: 10; }
+    .uno-card.red { background-color: #e84118; }
+    .uno-card.blue { background-color: #00a8ff; }
+    .uno-card.green { background-color: #4cd137; }
+    .uno-card.yellow { background-color: #fbc531; }
+    .uno-card.black { background-color: #2f3640; }
 
     .uno-card::before {
       content: ''; position: absolute; width: 64px; height: 96px; border-radius: 50%;
       background: #ffffff; transform: rotate(-28deg); box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
     }
-    .uno-card.black::before { background: conic-gradient(#ef4444 0deg 90deg, #3b82f6 90deg 180deg, #10b981 180deg 270deg, #fbbf24 270deg 360deg); }
+    .uno-card.black::before { background: conic-gradient(#e84118 0deg 90deg, #00a8ff 90deg 180deg, #4cd137 180deg 270deg, #fbc531 270deg 360deg); }
 
-    .uno-card .card-value { position: relative; z-index: 2; font-size: 2.2rem; font-weight: 900; font-style: italic; color: #1e293b; text-shadow: 2px 2px 0px rgba(255,255,255,0.8), -1px -1px 0px rgba(0,0,0,0.2); }
-    .uno-card.black .card-value { color: #ffffff; text-shadow: 2px 2px 6px rgba(0,0,0,0.9); }
+    .uno-card .card-value { position: relative; z-index: 2; font-size: 2.2rem; font-weight: 900; font-style: italic; color: #2f3640; text-shadow: 2px 2px 0px rgba(255,255,255,0.8), -1px -1px 0px rgba(0,0,0,0.2); }
+    .uno-card.black .card-value { color: #ffffff; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
 
     .uno-card .corner-symbol { position: absolute; font-size: 0.75rem; font-weight: bold; color: #ffffff; z-index: 3; }
     .uno-card .corner-symbol.top-left { top: 4px; left: 6px; }
     .uno-card .corner-symbol.bottom-right { bottom: 4px; right: 6px; transform: rotate(180deg); }
 
-    .uno-card-back { background: linear-gradient(135deg, #1e293b, #000000); border: 4px solid #ffffff; }
-    .uno-card-back::before { content: ''; position: absolute; width: 64px; height: 96px; border-radius: 50%; background: #ef4444; transform: rotate(-28deg); }
-    .uno-card-back .logo { position: relative; z-index: 2; font-weight: 900; font-style: italic; color: #fbbf24; font-size: 1.1rem; text-shadow: 2px 2px 0 #000; transform: rotate(-15deg); }
+    .uno-card-back { background: linear-gradient(135deg, #2c3e50, #000000); border: 4px solid #ffffff; }
+    .uno-card-back::before { content: ''; position: absolute; width: 64px; height: 96px; border-radius: 50%; background: #e74c3c; transform: rotate(-28deg); }
+    .uno-card-back .logo { position: relative; z-index: 2; font-weight: 900; font-style: italic; color: #f1c40f; font-size: 1.1rem; text-shadow: 2px 2px 0 #000; transform: rotate(-15deg); }
 
     @keyframes pulseGlow {
-      0% { box-shadow: 0 0 15px #fbbf24, 0 10px 25px rgba(0,0,0,0.5); transform: scale(1); }
-      50% { box-shadow: 0 0 30px #fbbf24, 0 14px 30px rgba(0,0,0,0.7); transform: scale(1.08); }
-      100% { box-shadow: 0 0 15px #fbbf24, 0 10px 25px rgba(0,0,0,0.5); transform: scale(1); }
+      0% { box-shadow: 0 0 10px #f1c40f, 0 6px 16px rgba(0,0,0,0.4); transform: scale(1); }
+      50% { box-shadow: 0 0 25px #f1c40f, 0 10px 20px rgba(0,0,0,0.6); transform: scale(1.08); }
+      100% { box-shadow: 0 0 10px #f1c40f, 0 6px 16px rgba(0,0,0,0.4); transform: scale(1); }
     }
-    .uno-card.playable-draw { animation: pulseGlow 1.2s infinite; border-color: #fbbf24; }
+    .uno-card.playable-draw { animation: pulseGlow 1.2s infinite; border-color: #f1c40f; }
 
-    .hand-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; min-height: 170px; padding: 20px; background: rgba(15, 23, 42, 0.7); border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); }
+    .hand-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 15px; min-height: 180px; padding: 20px; background: #192a56; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
 
-    .players-status { display: flex; justify-content: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-    .player-badge { padding: 8px 16px; border-radius: 20px; background: rgba(30, 41, 59, 0.9); font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s; }
-    .player-badge:hover { background: #334155; border-color: #fbbf24; transform: translateY(-2px); }
-    .player-badge.active-turn { border: 2px solid #fbbf24; font-weight: bold; background: #1e293b; box-shadow: 0 0 15px rgba(251, 191, 36, 0.5); }
+    .players-status { display: flex; justify-content: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+    .player-badge { padding: 8px 16px; border-radius: 20px; background: #2f3640; font-size: 0.9rem; border: 1px solid #353b48; cursor: pointer; transition: background 0.2s; }
+    .player-badge:hover { background: #353b48; border-color: #f1c40f; }
+    .player-badge.active-turn { border: 2px solid #f1c40f; font-weight: bold; background: #353b48; box-shadow: 0 0 12px rgba(241, 196, 15, 0.4); }
 
-    .color-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(6px); }
-    .color-picker { background: #1e293b; padding: 28px; border-radius: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-    .color-btn { width: 90px; height: 90px; border-radius: 14px; border: 3px solid #fff; cursor: pointer; transition: transform 0.2s; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+    .color-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
+    .color-picker { background: #2f3640; padding: 24px; border-radius: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border: 2px solid #353b48; }
+    .color-btn { width: 90px; height: 90px; border-radius: 12px; border: 3px solid #fff; cursor: pointer; transition: transform 0.2s; }
     .color-btn:hover { transform: scale(1.1); }
 
-    .action-bar { display: flex; justify-content: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
-    .action-bar button { width: auto; min-width: 120px; margin: 0; }
-    .uno-btn { background: #fbbf24; color: #1e293b; box-shadow: 0 4px 14px rgba(251, 191, 36, 0.4); }
-    .uno-btn:hover { background: #f59e0b; }
-    .uno-btn.active { background: #10b981; color: white; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); }
-    .resign-btn { background: #64748b; color: #fff; box-shadow: 0 4px 14px rgba(100, 116, 139, 0.4); }
-    .resign-btn:hover { background: #475569; }
+    .action-bar { display: flex; justify-content: center; gap: 12px; margin-top: 10px; }
+    .action-bar button { width: auto; min-width: 130px; margin: 0; }
+    .uno-btn { background: #fbc531; color: #2c3e50; }
+    .uno-btn.active { background: #4cd137; color: white; }
 
-    .announcement-banner { background: #ef4444; color: white; padding: 10px 18px; border-radius: 10px; font-weight: bold; margin-bottom: 12px; display: none; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); animation: pulseGlow 2s infinite; }
+    .announcement-banner { background: #eb4d4b; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; margin-bottom: 12px; display: none; }
 
     .results-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    .results-table th, .results-table td { padding: 12px; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
-    .results-table th { background: rgba(30, 41, 59, 0.9); color: #fbbf24; }
+    .results-table th, .results-table td { padding: 12px; border: 1px solid #353b48; text-align: center; }
 
-    .game-credits { margin-top: 15px; font-size: 0.75rem; color: #64748b; line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; }
+    .game-credits { margin-top: 20px; font-size: 0.75rem; color: #8c96a0; line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; }
   </style>
 </head>
 <body>
@@ -166,18 +152,18 @@
   <!-- Color Selector Modal -->
   <div class="color-modal" id="colorModal">
     <div class="color-picker">
-      <button class="color-btn" style="background:#ef4444" onclick="selectWildColor('red')"></button>
-      <button class="color-btn" style="background:#3b82f6" onclick="selectWildColor('blue')"></button>
-      <button class="color-btn" style="background:#10b981" onclick="selectWildColor('green')"></button>
-      <button class="color-btn" style="background:#fbbf24" onclick="selectWildColor('yellow')"></button>
+      <button class="color-btn" style="background:#e84118" onclick="selectWildColor('red')"></button>
+      <button class="color-btn" style="background:#00a8ff" onclick="selectWildColor('blue')"></button>
+      <button class="color-btn" style="background:#4cd137" onclick="selectWildColor('green')"></button>
+      <button class="color-btn" style="background:#fbc531" onclick="selectWildColor('yellow')"></button>
     </div>
   </div>
 
   <!-- User Profile Modal -->
   <div class="color-modal" id="profileModal">
-    <div class="dashboard-panel" style="background: #1e293b; max-width: 350px; width: 90%; border: 2px solid rgba(255,255,255,0.15); text-align: center;">
-      <h3 id="modalProfileName" style="color: #fbbf24; margin-bottom: 15px;">Player Profile</h3>
-      <div class="profile-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+    <div class="dashboard-panel" style="background: #222f3e; max-width: 350px; width: 90%; border: 2px solid #353b48; text-align: center;">
+      <h3 id="modalProfileName" style="color: #f1c40f; margin-bottom: 15px;">Player Profile</h3>
+      <div class="profile-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
         <div class="stat-box"><span>Level</span><strong id="modalProfileLevel">1</strong></div>
         <div class="stat-box"><span>Total XP</span><strong id="modalProfileXP">0</strong></div>
         <div class="stat-box"><span>Played</span><strong id="modalProfilePlayed">0</strong></div>
@@ -185,16 +171,14 @@
         <div class="stat-box"><span>Losses</span><strong id="modalProfileLosses">0</strong></div>
         <div class="stat-box"><span>W/L Ratio</span><strong id="modalProfileRatio">0.00</strong></div>
       </div>
-      <button onclick="closeProfileModal()" style="background: #64748b; margin: 0;">Close</button>
+      <button onclick="closeProfileModal()" style="background: #718093; margin: 0;">Close</button>
     </div>
   </div>
 
   <!-- AUTH SCREEN -->
   <div id="authScreen" class="screen">
-    <div>
-      <h1>Online UNO</h1>
-      <h3 id="authTitle" style="color: #94a3b8; font-size: 1rem; margin-top: -10px;">Log In to Your Account</h3>
-    </div>
+    <h1>Online UNO</h1>
+    <h3 id="authTitle">Log In to Your Account</h3>
     
     <div class="auth-box">
       <input type="text" id="authUsername" placeholder="Username (for Sign Up)" style="display: none;">
@@ -202,8 +186,8 @@
       <input type="password" id="authPassword" placeholder="Password">
       
       <button id="loginBtn">Log In</button>
-      <button id="signupBtn" style="background: #10b981; display: none;">Sign Up</button>
-      <button id="toggleAuthBtn" style="background: transparent; box-shadow: none; text-decoration: underline; font-size: 0.85rem; color: #38bdf8;">Need an account? Switch to Sign Up</button>
+      <button id="signupBtn" style="background: #4cd137; display: none;">Sign Up</button>
+      <button id="toggleAuthBtn" style="background: transparent; box-shadow: none; text-decoration: underline; font-size: 0.85rem;">Need an account? Switch to Sign Up</button>
     </div>
 
     <div class="game-credits">
@@ -227,36 +211,25 @@
       <!-- Left Panel: Profile & Controls -->
       <div class="dashboard-panel">
         <div>
-          <h3>Player: <span id="profileName" style="color: #fbbf24;">--</span></h3>
-          
-          <!-- XP Progress Bar Widget -->
-          <div class="xp-progress-container">
-            <div class="xp-info-row">
-              <span>Level <span id="profileLevelText">1</span> Progression</span>
-              <span><span id="currentLevelXP">0</span> / 1000 XP</span>
-            </div>
-            <div class="xp-bar-bg">
-              <div id="xpBarFill" class="xp-bar-fill"></div>
-            </div>
-          </div>
-
+          <h3>Player Profile: <span id="profileName" style="color: #f1c40f;">--</span></h3>
           <div class="profile-grid">
+            <div class="stat-box"><span>Level</span><strong id="profileLevel">1</strong></div>
             <div class="stat-box"><span>Total XP</span><strong id="profileXP">0</strong></div>
             <div class="stat-box"><span>Played</span><strong id="profilePlayed">0</strong></div>
             <div class="stat-box"><span>Wins</span><strong id="profileWins">0</strong></div>
             <div class="stat-box"><span>Losses</span><strong id="profileLosses">0</strong></div>
-            <div class="stat-box" style="grid-column: span 2;"><span>W/L Ratio</span><strong id="profileRatio">0.00</strong></div>
+            <div class="stat-box"><span>W/L Ratio</span><strong id="profileRatio">0.00</strong></div>
           </div>
         </div>
 
         <div class="lobby-controls">
-          <button id="playVsCpuBtn" style="background: #8b5cf6;">Play vs Computer</button>
-          <button id="createRoomBtn" style="background: #10b981;">Create Online Room</button>
+          <button id="playVsCpuBtn" style="background: #9b59b6;">Play vs Computer</button>
+          <button id="createRoomBtn" style="background: #4cd137;">Create Online Room</button>
           <div class="join-group">
             <input type="text" id="roomCodeInput" placeholder="6-Digit Code" maxlength="6">
             <button id="joinRoomBtn" style="min-width: 120px;">Join Room</button>
           </div>
-          <button id="logoutBtn" style="background: #64748b; margin-top: 4px;">Log Out</button>
+          <button id="logoutBtn" style="background: #718093; margin-top: 8px;">Log Out</button>
         </div>
       </div>
 
@@ -265,9 +238,9 @@
         <h3>How to Play & Official Rules</h3>
         <ul class="guide-list">
           <li><span>⚡ 1s UNO Penalty:</span> Hit "SAY UNO!" within 1 second of having 1 card left, or draw 2 penalty cards.</li>
-          <li><span>🏳️ Resigning:</span> Resigning forfeits XP. In 2-player matches, resigning instantly grants the remaining player the win!</li>
           <li><span>🎯 Objective:</span> Be the first player to empty your hand of all cards.</li>
-          <li><span>🃏 Exhaustible Deck:</span> Played cards leave the active pool permanently until the deck runs out and reshuffles.</li>
+          <li><span>🃏 Matching:</span> Match the top card of the Discard Pile by color, number, or symbol.</li>
+          <li><span>📥 Drawing:</span> If you have no playable cards, draw 1 card. If playable, you can play it or pass.</li>
           <li><span>⊘ Skip Card:</span> The next player in rotation loses their turn.</li>
           <li><span>⇄ Reverse Card:</span> Reverses play direction. In 2-player matches, it acts as a Skip.</li>
           <li><span>＋2 Draw Two:</span> Forces the next player to draw 2 cards and lose their turn.</li>
@@ -284,15 +257,13 @@
 
   <!-- WAITING ROOM SCREEN -->
   <div id="waitingScreen" class="screen" style="display: none;">
-    <div>
-      <h2>Room Code: <span id="displayRoomCode" style="color: #fbbf24;">------</span></h2>
-      <p style="margin-bottom: 20px; color: #94a3b8;">Waiting for players (2 to 4 Players)... Click any username to view profile.</p>
-    </div>
+    <h2>Room Code: <span id="displayRoomCode" style="color: #fbc531;">------</span></h2>
+    <p style="margin-bottom: 20px;">Waiting for players (2 to 4 Players)... Click any username to view profile.</p>
     <div id="waitingPlayersList" class="players-status"></div>
     
     <div class="waiting-actions">
-      <button id="copyInviteLinkBtn" style="background: #3b82f6; display: none;">Copy Invite Link</button>
-      <button id="startMatchBtn" style="background: #10b981; display: none;">Start Game</button>
+      <button id="copyInviteLinkBtn" style="background: #00a8ff; display: none;">Copy Invite Link</button>
+      <button id="startMatchBtn" style="background: #4cd137; display: none;">Start Game</button>
       <button id="leaveRoomBtn">Leave Room</button>
     </div>
 
@@ -307,7 +278,7 @@
 
     <div class="game-header">
       <div>Room: <strong id="gameRoomCode">------</strong></div>
-      <div>Active Color: <strong id="activeColorDisplay" style="color:#fbbf24">RED</strong></div>
+      <div>Active Color: <strong id="activeColorDisplay" style="color:#fbc531">RED</strong></div>
     </div>
     <div id="gamePlayersList" class="players-status"></div>
 
@@ -326,11 +297,10 @@
 
     <div class="action-bar">
       <button id="callUnoBtn" class="uno-btn" onclick="callUno()">SAY UNO!</button>
-      <button id="passTurnBtn" style="background: #d97706; display: none;" onclick="passTurn()">Pass Turn</button>
-      <button id="resignBtn" class="resign-btn" onclick="resignGame()">Resign</button>
+      <button id="passTurnBtn" style="background: #e67e22; display: none;" onclick="passTurn()">Pass Turn</button>
     </div>
 
-    <h3 id="handTitle">Your Hand</h3>
+    <h3>Your Hand</h3>
     <div id="playerHand" class="hand-container"></div>
 
     <div class="game-credits">
@@ -340,16 +310,14 @@
 
   <!-- RESULTS SCREEN -->
   <div id="resultsScreen" class="screen" style="display: none;">
-    <div>
-      <h2>Game Over!</h2>
-      <table class="results-table">
-        <thead>
-          <tr><th>Place</th><th>Player</th><th>Base XP</th><th>Bonus XP</th><th>Total XP</th></tr>
-        </thead>
-        <tbody id="resultsTableBody"></tbody>
-      </table>
-    </div>
-    <button id="returnLobbyBtn" style="background: #10b981; max-width: 320px; margin: 20px auto 0 auto;">Return to Lobby</button>
+    <h2>Game Over!</h2>
+    <table class="results-table">
+      <thead>
+        <tr><th>Place</th><th>Player</th><th>Base XP</th><th>Bonus XP</th><th>Total XP</th></tr>
+      </thead>
+      <tbody id="resultsTableBody"></tbody>
+    </table>
+    <button id="returnLobbyBtn" style="margin-top: 25px; background: #4cd137; max-width: 320px; margin-left: auto; margin-right: auto;">Return to Lobby</button>
 
     <div class="game-credits">
       Thanks for playing! UNO® is a trademark of Mattel, Inc.
@@ -525,16 +493,10 @@
       const played = userProfile.gamesPlayed || 0;
       const wins = userProfile.gamesWon || 0;
       const losses = Math.max(0, played - wins);
-      const totalXP = userProfile.xp || 0;
-      const currentLevel = Math.floor(totalXP / 1000) + 1;
-      const xpIntoLevel = totalXP % 1000;
-      const xpPercent = (xpIntoLevel / 1000) * 100;
 
       document.getElementById('profileName').innerText = userProfile.name || "Player";
-      document.getElementById('profileXP').innerText = totalXP;
-      document.getElementById('profileLevelText').innerText = currentLevel;
-      document.getElementById('currentLevelXP').innerText = xpIntoLevel;
-      document.getElementById('xpBarFill').style.width = `${xpPercent}%`;
+      document.getElementById('profileXP').innerText = userProfile.xp || 0;
+      document.getElementById('profileLevel').innerText = Math.floor((userProfile.xp || 0) / 1000) + 1;
       document.getElementById('profilePlayed').innerText = played;
       document.getElementById('profileWins').innerText = wins;
       document.getElementById('profileLosses').innerText = losses;
@@ -672,8 +634,8 @@
         discardPile: [initialDiscard],
         notification: "Solo match started against RoboRobbins 🤖!",
         players: [
-          { id: currentUser.uid, name: userProfile.name, hand: playerHand, out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null, resigned: false },
-          { id: BOT_USER_ID, name: botData.name, hand: cpuHand, out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null, resigned: false }
+          { id: currentUser.uid, name: userProfile.name, hand: playerHand, out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null },
+          { id: BOT_USER_ID, name: botData.name, hand: cpuHand, out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null }
         ]
       };
 
@@ -693,7 +655,7 @@
         await set(roomRef, {
           hostId: currentUser.uid, status: "waiting", currentTurn: 0, direction: 1, currentColor: "red",
           deck: [], discardPile: [], placements: [], notification: "",
-          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null, resigned: false }]
+          players: [{ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null }]
         });
         await update(ref(db, `users/${currentUser.uid}`), { currentRoom: roomCode });
         onDisconnect(roomRef).remove();
@@ -748,7 +710,7 @@
           if (!room.players) room.players = [];
           const existingIdx = room.players.findIndex(p => p.id === currentUser.uid);
           if (existingIdx !== -1) room.players[existingIdx].name = userProfile.name;
-          else room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null, resigned: false });
+          else room.players.push({ id: currentUser.uid, name: userProfile.name, hand: [], out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null });
           return room;
         });
 
@@ -830,7 +792,7 @@
         if (room && room.players.length >= 2) {
           room.status = "playing";
           const deck = generateDeck();
-          room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; p.drawnPlayableId = null; p.calledUno = false; p.unoTimerExpires = null; p.resigned = false; });
+          room.players.forEach(p => { p.hand = deck.splice(0, 7); p.out = false; p.drawnPlayableId = null; p.calledUno = false; p.unoTimerExpires = null; });
           let initialDiscard = deck.pop();
           while (initialDiscard.color === 'black') { deck.unshift(initialDiscard); initialDiscard = deck.pop(); }
           room.deck = deck;
@@ -891,85 +853,71 @@
 
       const activeColorEl = document.getElementById('activeColorDisplay');
       activeColorEl.innerText = room.currentColor.toUpperCase();
-      const colorHex = { red: '#ef4444', blue: '#3b82f6', green: '#10b981', yellow: '#fbbf24' };
-      activeColorEl.style.color = colorHex[room.currentColor] || '#fbbf24';
+      const colorHex = { red: '#e84118', blue: '#00a8ff', green: '#4cd137', yellow: '#fbc531' };
+      activeColorEl.style.color = colorHex[room.currentColor] || '#fbc531';
 
       const topCard = room.discardPile[room.discardPile.length - 1];
       document.getElementById('topCardDisplay').innerHTML = renderCardHTML(topCard);
 
       document.getElementById('gamePlayersList').innerHTML = room.players.map((p, idx) => `
         <div class="player-badge ${idx === room.currentTurn ? 'active-turn' : ''}" onclick="viewUserProfile('${p.id}')" title="Click to view profile">
-          ${p.name} ${p.resigned ? '(Resigned)' : `(${p.hand ? p.hand.length : 0} cards)`} ${p.calledUno ? '⚡UNO' : ''}
+          ${p.name} (${p.hand ? p.hand.length : 0} cards) ${p.calledUno ? '⚡UNO' : ''}
         </div>
       `).join('');
 
       const myData = room.players.find(p => p.id === currentUser.uid);
       const isMyTurn = room.players[room.currentTurn].id === currentUser.uid;
 
-      // Handle Spectator View
-      const handContainer = document.getElementById('playerHand');
-      const handTitle = document.getElementById('handTitle');
+      // Handle CPU Turn Automatically
+      if (isCpuMode && room.status === "playing" && room.players[room.currentTurn].id === BOT_USER_ID) {
+        setTimeout(runCpuTurn, 1000);
+      }
 
-      if (myData && (myData.resigned || myData.out)) {
-        handTitle.innerText = myData.resigned ? "You Resigned (Spectating)" : "You Finished! (Spectating)";
-        handContainer.innerHTML = '<p style="color: #94a3b8; font-style: italic; margin: auto;">You are spectating the rest of the game...</p>';
-        document.getElementById('callUnoBtn').style.display = 'none';
-        document.getElementById('passTurnBtn').style.display = 'none';
-        document.getElementById('resignBtn').style.display = 'none';
-      } else {
-        handTitle.innerText = "Your Hand";
-        document.getElementById('resignBtn').style.display = 'inline-block';
-
-        // Handle CPU Turn Automatically
-        if (isCpuMode && room.status === "playing" && room.players[room.currentTurn].id === BOT_USER_ID) {
-          setTimeout(runCpuTurn, 1000);
-        }
-
-        // Handle UNO Button 1-Second Timer Rules
-        const unoBtn = document.getElementById('callUnoBtn');
-        unoBtn.style.display = 'inline-block';
-        if (myData) {
-          if (myData.calledUno) {
-            unoBtn.className = "uno-btn active";
-            unoBtn.innerText = "UNO CALLED!";
-          } else {
-            unoBtn.className = "uno-btn";
-            unoBtn.innerText = "SAY UNO!";
+      // Handle UNO Button 1-Second Timer Rules
+      const unoBtn = document.getElementById('callUnoBtn');
+      if (myData) {
+        if (myData.calledUno) {
+          unoBtn.className = "uno-btn active";
+          unoBtn.innerText = "UNO CALLED!";
+        } else {
+          unoBtn.className = "uno-btn";
+          unoBtn.innerText = "SAY UNO!";
+          
+          if (myData.hand && myData.hand.length === 1 && myData.unoTimerExpires) {
+            if (unoPenaltyTimer) clearTimeout(unoPenaltyTimer);
+            const remainingTime = Math.max(0, myData.unoTimerExpires - Date.now());
             
-            if (myData.hand && myData.hand.length === 1 && myData.unoTimerExpires) {
-              if (unoPenaltyTimer) clearTimeout(unoPenaltyTimer);
-              const remainingTime = Math.max(0, myData.unoTimerExpires - Date.now());
-              
-              unoPenaltyTimer = setTimeout(() => {
-                triggerUnoTimerPenalty();
-              }, remainingTime);
-            } else {
-              if (unoPenaltyTimer) {
-                clearTimeout(unoPenaltyTimer);
-                unoPenaltyTimer = null;
-              }
+            unoPenaltyTimer = setTimeout(() => {
+              triggerUnoTimerPenalty();
+            }, remainingTime);
+          } else {
+            if (unoPenaltyTimer) {
+              clearTimeout(unoPenaltyTimer);
+              unoPenaltyTimer = null;
             }
           }
         }
+      }
 
-        const passBtn = document.getElementById('passTurnBtn');
-        if (isMyTurn && myData && myData.drawnPlayableId !== null && myData.drawnPlayableId !== undefined) {
-          passBtn.style.display = 'inline-block';
-        } else {
-          passBtn.style.display = 'none';
-        }
+      const passBtn = document.getElementById('passTurnBtn');
+      if (isMyTurn && myData && myData.drawnPlayableId !== null && myData.drawnPlayableId !== undefined) {
+        passBtn.style.display = 'inline-block';
+      } else {
+        passBtn.style.display = 'none';
+      }
 
-        handContainer.innerHTML = '';
-        if (myData && myData.hand && !myData.out) {
-          myData.hand.forEach((card, idx) => {
-            const wrapper = document.createElement('div');
-            const isPlayableDrawn = myData.drawnPlayableId === card.id;
-            wrapper.innerHTML = renderCardHTML(card, isPlayableDrawn ? "playable-draw" : "");
-            const cardEl = wrapper.firstElementChild;
-            cardEl.onclick = () => handleCardClick(idx, room);
-            handContainer.appendChild(cardEl);
-          });
-        }
+      const handContainer = document.getElementById('playerHand');
+      handContainer.innerHTML = '';
+
+      if (myData && myData.hand && !myData.out) {
+        myData.hand.forEach((card, idx) => {
+          const wrapper = document.createElement('div');
+          const isPlayableDrawn = myData.drawnPlayableId === card.id;
+          wrapper.innerHTML = renderCardHTML(card, isPlayableDrawn ? "playable-draw" : "");
+          const cardEl = wrapper.firstElementChild;
+          cardEl.onclick = () => handleCardClick(idx, room);
+          handContainer.appendChild(cardEl);
+        });
       }
     }
 
@@ -979,8 +927,6 @@
       if (cpuGame.currentTurn !== cpuIdx) return;
 
       const bot = cpuGame.players[cpuIdx];
-      if (bot.resigned || bot.out) return;
-
       const playableIdx = bot.hand.findIndex(c => isCardValid(c, cpuGame));
 
       if (playableIdx !== -1) {
@@ -1001,7 +947,7 @@
           executePlayCard(cpuGame, cpuIdx, cardIdx, chosenColor);
         } else {
           cpuGame.notification = "RoboRobbins drew a card and passed.";
-          cpuGame.currentTurn = getNextActivePlayerIndex(cpuGame, cpuGame.currentTurn, 1);
+          cpuGame.currentTurn = 0;
           renderGame(cpuGame);
         }
       }
@@ -1130,7 +1076,7 @@
         const player = cpuGame.players[myIdx];
         player.drawnPlayableId = null;
         cpuGame.notification = `${player.name} passed their turn.`;
-        cpuGame.currentTurn = getNextActivePlayerIndex(cpuGame, cpuGame.currentTurn, 1);
+        cpuGame.currentTurn = getNextPlayerIndex(cpuGame, cpuGame.currentTurn, 1);
         renderGame(cpuGame);
         return;
       }
@@ -1145,50 +1091,6 @@
         room.notification = `${player.name} passed their turn.`;
 
         advanceTurn(room, 1);
-        return room;
-      });
-    };
-
-    window.resignGame = () => {
-      if (!confirm("Are you sure you want to resign? You will forfeit XP and the other player will win.")) return;
-
-      if (isCpuMode) {
-        if (!cpuGame) return;
-        const myIdx = cpuGame.players.findIndex(p => p.id === currentUser.uid);
-        if (myIdx !== -1) {
-          cpuGame.players[myIdx].resigned = true;
-          cpuGame.players[myIdx].out = true;
-          
-          // In 2-player mode, resigning immediately gives the win to the remaining player
-          cpuGame.status = "finished";
-          calculateCpuXP(cpuGame);
-          showScreen('resultsScreen');
-          renderResults(cpuGame);
-        }
-        return;
-      }
-
-      runTransaction(ref(db, `rooms/${currentRoomCode}`), (room) => {
-        if (!room) return room;
-        const myIdx = room.players.findIndex(p => p.id === currentUser.uid);
-        if (myIdx !== -1) {
-          room.players[myIdx].resigned = true;
-          room.players[myIdx].out = true;
-          room.notification = `${room.players[myIdx].name} has resigned.`;
-
-          const activeCount = room.players.filter(p => !p.out && !p.resigned).length;
-          const totalPlayers = room.players.length;
-
-          // If it's a 2-player match or only 1 player is left active, end game immediately
-          if (totalPlayers === 2 || activeCount <= 1) {
-            room.status = "finished";
-            calculateXP(room);
-          } else {
-            if (room.currentTurn === myIdx) {
-              room.currentTurn = getNextActivePlayerIndex(room, room.currentTurn, 1);
-            }
-          }
-        }
         return room;
       });
     };
@@ -1234,7 +1136,7 @@
         turnStep = 2;
       } 
       else if (card.type === 'reverse') {
-        const activeCount = room.players.filter(p => !p.out && !p.resigned).length;
+        const activeCount = room.players.filter(p => !p.out).length;
         if (activeCount === 2) {
           turnStep = 2;
         } else {
@@ -1242,32 +1144,32 @@
         }
       } 
       else if (card.type === 'draw2') {
-        const targetPlayerIdx = getNextActivePlayerIndex(room, turnIdx, 1);
+        const targetPlayerIdx = getNextPlayerIndex(room, turnIdx, 1);
         drawCards(room, targetPlayerIdx, 2);
         turnStep = 2;
       } 
       else if (card.type === 'wildDraw4') {
-        const targetPlayerIdx = getNextActivePlayerIndex(room, turnIdx, 1);
+        const targetPlayerIdx = getNextPlayerIndex(room, turnIdx, 1);
         drawCards(room, targetPlayerIdx, 4);
         turnStep = 2;
       }
 
       if (player.hand.length === 0) {
         player.out = true;
-        room.placements.push({ id: player.id, name: player.name, place: room.placements.length + 1, resigned: false });
+        room.placements.push({ id: player.id, name: player.name, place: room.placements.length + 1 });
       }
 
-      const active = room.players.filter(p => !p.out && !p.resigned);
+      const active = room.players.filter(p => !p.out);
       if (active.length <= 1) {
         active.forEach(p => {
           p.out = true;
-          room.placements.push({ id: p.id, name: p.name, place: room.placements.length + 1, resigned: false });
+          room.placements.push({ id: p.id, name: p.name, place: room.placements.length + 1 });
         });
         room.status = "finished";
         if (!isCpuMode) calculateXP(room);
         else calculateCpuXP(room);
       } else {
-        room.currentTurn = getNextActivePlayerIndex(room, room.currentTurn, turnStep);
+        room.currentTurn = getNextPlayerIndex(room, room.currentTurn, turnStep);
       }
 
       return room;
@@ -1289,7 +1191,7 @@
         } else {
           player.drawnPlayableId = null;
           cpuGame.notification = `${player.name} drew a card. Turn passed.`;
-          cpuGame.currentTurn = getNextActivePlayerIndex(cpuGame, cpuGame.currentTurn, 1);
+          cpuGame.currentTurn = getNextPlayerIndex(cpuGame, cpuGame.currentTurn, 1);
         }
         renderGame(cpuGame);
         return;
@@ -1342,20 +1244,19 @@
       return drawnList;
     }
 
-    function getNextActivePlayerIndex(room, current, step = 1) {
+    function getNextPlayerIndex(room, current, step = 1) {
       let count = 0;
       let target = current;
       const dir = room.direction || 1;
       while (count < step) {
         target = (target + dir + room.players.length) % room.players.length;
-        if (!room.players[target].out && !room.players[target].resigned) count++;
-        if (room.players.every(p => p.out || p.resigned)) break;
+        if (!room.players[target].out) count++;
       }
       return target;
     }
 
     function advanceTurn(room, step = 1) {
-      room.currentTurn = getNextActivePlayerIndex(room, room.currentTurn, step);
+      room.currentTurn = getNextPlayerIndex(room, room.currentTurn, step);
     }
 
     function calculateCpuXP(room) {
@@ -1365,11 +1266,8 @@
       });
 
       room.finalResults = room.players.map(player => {
-        if (player.resigned) {
-          return { id: player.id, name: player.name, place: 99, baseXP: 0, bonusXP: 0, totalXP: 0, resigned: true };
-        }
         const placementEntry = room.placements.find(p => p.id === player.id);
-        const place = placementEntry ? placementEntry.place : (room.players.length === 2 ? 1 : room.players.length);
+        const place = placementEntry ? placementEntry.place : room.players.length;
 
         let baseXP = 25;
         let bonusXP = 0;
@@ -1379,12 +1277,12 @@
           bonusXP = Object.values(handPoints).reduce((a, b) => a + b, 0);
         }
 
-        return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP, resigned: false };
+        return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
       });
 
       // Update Human User Stats
       const humanRes = room.finalResults.find(r => r.id === currentUser.uid);
-      if (humanRes && !humanRes.resigned) {
+      if (humanRes) {
         runTransaction(ref(db, `users/${currentUser.uid}`), (u) => {
           if (!u || typeof u !== 'object') {
             u = { name: userProfile.name, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
@@ -1395,25 +1293,19 @@
           u.level = Math.floor(u.xp / 1000) + 1;
           return u;
         });
-      } else if (humanRes && humanRes.resigned) {
-        runTransaction(ref(db, `users/${currentUser.uid}`), (u) => {
-          if (!u || typeof u !== 'object') {
-            u = { name: userProfile.name, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
-          }
-          u.gamesPlayed = (Number(u.gamesPlayed) || 0) + 1;
-          return u;
-        });
       }
 
-      // Update Bot Stats
+      // Update Bot (RoboRobbins) Stats with Robust Transaction Handling
       const botRes = room.finalResults.find(r => r.id === BOT_USER_ID);
-      if (botRes && !botRes.resigned) {
+      if (botRes) {
         runTransaction(ref(db, `users/${BOT_USER_ID}`), (b) => {
           if (!b || typeof b !== 'object') {
             b = { name: "RoboRobbins 🤖", xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
           }
           b.gamesPlayed = (Number(b.gamesPlayed) || 0) + 1;
-          if (botRes.place === 1) b.gamesWon = (Number(b.gamesWon) || 0) + 1;
+          if (botRes.place === 1) {
+            b.gamesWon = (Number(b.gamesWon) || 0) + 1;
+          }
           b.xp = (Number(b.xp) || 0) + botRes.totalXP;
           b.level = Math.floor(b.xp / 1000) + 1;
           return b;
@@ -1427,20 +1319,7 @@
         handPoints[p.id] = (p.hand || []).reduce((a, b) => a + (b.points || 0), 0);
       });
 
-      // If someone resigned in a 2-player game, ensure the non-resigning player gets 1st place
-      if (room.players.length === 2 && room.players.some(p => p.resigned)) {
-        room.placements = [];
-        room.players.forEach(p => {
-          if (!p.resigned) {
-            room.placements.push({ id: p.id, name: p.name, place: 1 });
-          }
-        });
-      }
-
       room.finalResults = room.players.map(player => {
-        if (player.resigned) {
-          return { id: player.id, name: player.name, place: 99, baseXP: 0, bonusXP: 0, totalXP: 0, resigned: true };
-        }
         const placementEntry = room.placements.find(p => p.id === player.id);
         const place = placementEntry ? placementEntry.place : room.players.length;
 
@@ -1456,7 +1335,7 @@
           baseXP = 35;
         }
 
-        return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP, resigned: false };
+        return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
       });
 
       room.finalResults.forEach(res => {
@@ -1466,13 +1345,12 @@
           }
           u.gamesPlayed = (Number(u.gamesPlayed) || 0) + 1;
           
-          if (!res.resigned) {
-            if (res.place === 1) {
-              u.gamesWon = (Number(u.gamesWon) || 0) + 1;
-            }
-            u.xp = (Number(u.xp) || 0) + res.totalXP;
-            u.level = Math.floor(u.xp / 1000) + 1;
+          if (res.place === 1) {
+            u.gamesWon = (Number(u.gamesWon) || 0) + 1;
           }
+
+          u.xp = (Number(u.xp) || 0) + res.totalXP;
+          u.level = Math.floor(u.xp / 1000) + 1;
           return u;
         });
       });
@@ -1484,11 +1362,11 @@
 
       document.getElementById('resultsTableBody').innerHTML = sortedResults.map(r => `
         <tr>
-          <td>${r.resigned ? 'RESIGNED' : '#' + r.place}</td>
+          <td>#${r.place}</td>
           <td>${r.name}</td>
           <td>${r.baseXP}</td>
           <td>${r.bonusXP}</td>
-          <td><strong>${r.resigned ? '0 XP (Resigned)' : '+' + r.totalXP + ' XP'}</strong></td>
+          <td><strong>+${r.totalXP} XP</strong></td>
         </tr>
       `).join('');
     }
