@@ -240,7 +240,7 @@
           <li><span>⚡ 1s UNO Penalty:</span> Hit "SAY UNO!" within 1 second of having 1 card left, or draw 2 penalty cards.</li>
           <li><span>🔄 2-Player Reverse:</span> Playing a Reverse card in a 2-player match acts as a Skip, giving you another turn.</li>
           <li><span>🏆 XP Progression:</span> Win matches and accumulate points from leftover opponent hands to rank up your profile level.</li>
-          <li><span>🤖 Solo Mode:</span> Choose "Play vs Computer" for an instant solo match against an AI bot without needing a room code.</li>
+          <li><span>🤖 Solo Mode:</span> Choose "Play vs Computer" for an instant solo match against RoboRobbins 🤖 without needing a room code.</li>
         </ul>
       </div>
     </div>
@@ -351,6 +351,7 @@
     // Solo CPU Mode State
     let isCpuMode = false;
     let cpuGame = null;
+    const BOT_USER_ID = 'BOT_ROBOROBBINS';
 
     const SYMBOLS = {
       'skip': '⊘',
@@ -360,24 +361,28 @@
       'wildDraw4': '+4'
     };
 
+    // --- INITIALIZE BOT PROFILE IN FIREBASE ---
+    async function ensureBotProfileExists() {
+      const botRef = ref(db, `users/${BOT_USER_ID}`);
+      const snap = await get(botRef);
+      if (!snap.exists()) {
+        await set(botRef, {
+          name: "RoboRobbins 🤖",
+          xp: 5000,
+          level: 6,
+          gamesPlayed: 100,
+          gamesWon: 65,
+          currentRoom: null
+        });
+      }
+    }
+
     // --- PROFILE MODAL HANDLERS ---
     window.closeProfileModal = () => {
       document.getElementById('profileModal').style.display = 'none';
     };
 
     window.viewUserProfile = async (userId) => {
-      if (userId === 'CPU_BOT') {
-        document.getElementById('modalProfileName').innerText = "Computer Bot 🤖";
-        document.getElementById('modalProfileLevel').innerText = "99";
-        document.getElementById('modalProfileXP').innerText = "99999";
-        document.getElementById('modalProfilePlayed').innerText = "∞";
-        document.getElementById('modalProfileWins').innerText = "∞";
-        document.getElementById('modalProfileLosses').innerText = "0";
-        document.getElementById('modalProfileRatio').innerText = "∞";
-        document.getElementById('profileModal').style.display = 'flex';
-        return;
-      }
-
       try {
         const userSnap = await get(ref(db, `users/${userId}`));
         if (!userSnap.exists()) return alert("User profile not found.");
@@ -427,6 +432,7 @@
           const profile = { name: username, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
           await set(ref(db, `users/${cred.user.uid}`), profile);
           userProfile = profile;
+          await ensureBotProfileExists();
           updateProfileUI();
           checkUrlRoomJoin();
         }
@@ -453,9 +459,10 @@
       signOut(auth);
     };
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       if (user) {
+        await ensureBotProfileExists();
         const userRef = ref(db, `users/${user.uid}`);
         onValue(userRef, async (snapshot) => {
           if (snapshot.exists()) {
@@ -600,10 +607,13 @@
     }
 
     // --- CPU SOLO MODE ENGINE ---
-    document.getElementById('playVsCpuBtn').onclick = () => {
+    document.getElementById('playVsCpuBtn').onclick = async () => {
       if (!currentUser || !userProfile) return alert("Please log in first.");
       isCpuMode = true;
       
+      const botSnap = await get(ref(db, `users/${BOT_USER_ID}`));
+      const botData = botSnap.exists() ? botSnap.val() : { name: "RoboRobbins 🤖" };
+
       const deck = generateDeck();
       const playerHand = deck.splice(0, 7);
       const cpuHand = deck.splice(0, 7);
@@ -613,14 +623,14 @@
 
       cpuGame = {
         status: "playing",
-        currentTurn: 0, // 0 = Player, 1 = CPU
+        currentTurn: 0,
         currentColor: initialDiscard.color,
         deck: deck,
         discardPile: [initialDiscard],
-        notification: "Solo match started against Computer Bot!",
+        notification: "Solo match started against RoboRobbins 🤖!",
         players: [
           { id: currentUser.uid, name: userProfile.name, hand: playerHand, out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null },
-          { id: 'CPU_BOT', name: "Computer Bot 🤖", hand: cpuHand, out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null }
+          { id: BOT_USER_ID, name: botData.name, hand: cpuHand, out: false, drawnPlayableId: null, calledUno: false, unoTimerExpires: null }
         ]
       };
 
@@ -854,7 +864,7 @@
       const isMyTurn = room.players[room.currentTurn].id === currentUser.uid;
 
       // Handle CPU Turn Automatically
-      if (isCpuMode && room.status === "playing" && room.players[room.currentTurn].id === 'CPU_BOT') {
+      if (isCpuMode && room.status === "playing" && room.players[room.currentTurn].id === BOT_USER_ID) {
         setTimeout(runCpuTurn, 1000);
       }
 
@@ -908,7 +918,7 @@
 
     function runCpuTurn() {
       if (!isCpuMode || !cpuGame || cpuGame.status !== "playing") return;
-      const cpuIdx = cpuGame.players.findIndex(p => p.id === 'CPU_BOT');
+      const cpuIdx = cpuGame.players.findIndex(p => p.id === BOT_USER_ID);
       if (cpuGame.currentTurn !== cpuIdx) return;
 
       const bot = cpuGame.players[cpuIdx];
@@ -931,7 +941,7 @@
           const cardIdx = bot.hand.length - 1;
           executePlayCard(cpuGame, cpuIdx, cardIdx, chosenColor);
         } else {
-          cpuGame.notification = "Computer Bot drew a card and passed.";
+          cpuGame.notification = "RoboRobbins drew a card and passed.";
           cpuGame.currentTurn = 0;
           renderGame(cpuGame);
         }
@@ -1107,7 +1117,6 @@
       room.currentColor = chosenColor;
       room.notification = "";
 
-      // Check UNO 1-Second Trigger Rule (1000ms timer)
       if (player.hand.length === 1) {
         player.calledUno = false;
         player.unoTimerExpires = Date.now() + 1000;
@@ -1266,6 +1275,7 @@
         return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP };
       });
 
+      // Update Human User Stats
       const humanRes = room.finalResults.find(r => r.id === currentUser.uid);
       if (humanRes) {
         runTransaction(ref(db, `users/${currentUser.uid}`), (u) => {
@@ -1275,6 +1285,19 @@
           u.xp = (u.xp || 0) + humanRes.totalXP;
           u.level = Math.floor(u.xp / 1000) + 1;
           return u;
+        });
+      }
+
+      // Update Bot (RoboRobbins) Stats in Firebase
+      const botRes = room.finalResults.find(r => r.id === BOT_USER_ID);
+      if (botRes) {
+        runTransaction(ref(db, `users/${BOT_USER_ID}`), (b) => {
+          if (!b) return b;
+          b.gamesPlayed = (b.gamesPlayed || 0) + 1;
+          if (botRes.place === 1) b.gamesWon = (b.gamesWon || 0) + 1;
+          b.xp = (b.xp || 0) + botRes.totalXP;
+          b.level = Math.floor(b.xp / 1000) + 1;
+          return b;
         });
       }
     }
@@ -1305,7 +1328,6 @@
       });
 
       room.finalResults.forEach(res => {
-        if (res.id === 'CPU_BOT') return;
         runTransaction(ref(db, `users/${res.id}`), (u) => {
           if (!u) return u;
           u.gamesPlayed = (u.gamesPlayed || 0) + 1;
