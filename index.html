@@ -265,7 +265,7 @@
         <h3>How to Play & Official Rules</h3>
         <ul class="guide-list">
           <li><span>⚡ 1s UNO Penalty:</span> Hit "SAY UNO!" within 1 second of having 1 card left, or draw 2 penalty cards.</li>
-          <li><span>🏳️ Resigning:</span> You can resign anytime, forfeiting XP. If players remain, you enter spectator mode.</li>
+          <li><span>🏳️ Resigning:</span> Resigning forfeits XP. In 2-player matches, resigning instantly grants the remaining player the win!</li>
           <li><span>🎯 Objective:</span> Be the first player to empty your hand of all cards.</li>
           <li><span>🃏 Exhaustible Deck:</span> Played cards leave the active pool permanently until the deck runs out and reshuffles.</li>
           <li><span>⊘ Skip Card:</span> The next player in rotation loses their turn.</li>
@@ -909,7 +909,6 @@
       // Handle Spectator View
       const handContainer = document.getElementById('playerHand');
       const handTitle = document.getElementById('handTitle');
-      const actionButtons = document.querySelectorAll('.action-bar button');
 
       if (myData && (myData.resigned || myData.out)) {
         handTitle.innerText = myData.resigned ? "You Resigned (Spectating)" : "You Finished! (Spectating)";
@@ -1151,7 +1150,7 @@
     };
 
     window.resignGame = () => {
-      if (!confirm("Are you sure you want to resign? You will forfeit XP and spectate the rest of the game.")) return;
+      if (!confirm("Are you sure you want to resign? You will forfeit XP and the other player will win.")) return;
 
       if (isCpuMode) {
         if (!cpuGame) return;
@@ -1159,20 +1158,12 @@
         if (myIdx !== -1) {
           cpuGame.players[myIdx].resigned = true;
           cpuGame.players[myIdx].out = true;
-          cpuGame.notification = "You resigned from the match.";
           
-          const active = cpuGame.players.filter(p => !p.out && !p.resigned);
-          if (active.length <= 1) {
-            cpuGame.status = "finished";
-            calculateCpuXP(cpuGame);
-            showScreen('resultsScreen');
-            renderResults(cpuGame);
-            return;
-          }
-          if (cpuGame.currentTurn === myIdx) {
-            cpuGame.currentTurn = getNextActivePlayerIndex(cpuGame, cpuGame.currentTurn, 1);
-          }
-          renderGame(cpuGame);
+          // In 2-player mode, resigning immediately gives the win to the remaining player
+          cpuGame.status = "finished";
+          calculateCpuXP(cpuGame);
+          showScreen('resultsScreen');
+          renderResults(cpuGame);
         }
         return;
       }
@@ -1185,12 +1176,17 @@
           room.players[myIdx].out = true;
           room.notification = `${room.players[myIdx].name} has resigned.`;
 
-          const active = room.players.filter(p => !p.out && !p.resigned);
-          if (active.length <= 1) {
+          const activeCount = room.players.filter(p => !p.out && !p.resigned).length;
+          const totalPlayers = room.players.length;
+
+          // If it's a 2-player match or only 1 player is left active, end game immediately
+          if (totalPlayers === 2 || activeCount <= 1) {
             room.status = "finished";
             calculateXP(room);
-          } else if (room.currentTurn === myIdx) {
-            room.currentTurn = getNextActivePlayerIndex(room, room.currentTurn, 1);
+          } else {
+            if (room.currentTurn === myIdx) {
+              room.currentTurn = getNextActivePlayerIndex(room, room.currentTurn, 1);
+            }
           }
         }
         return room;
@@ -1353,7 +1349,6 @@
       while (count < step) {
         target = (target + dir + room.players.length) % room.players.length;
         if (!room.players[target].out && !room.players[target].resigned) count++;
-        // Safety break if all players out
         if (room.players.every(p => p.out || p.resigned)) break;
       }
       return target;
@@ -1374,7 +1369,7 @@
           return { id: player.id, name: player.name, place: 99, baseXP: 0, bonusXP: 0, totalXP: 0, resigned: true };
         }
         const placementEntry = room.placements.find(p => p.id === player.id);
-        const place = placementEntry ? placementEntry.place : room.players.length;
+        const place = placementEntry ? placementEntry.place : (room.players.length === 2 ? 1 : room.players.length);
 
         let baseXP = 25;
         let bonusXP = 0;
@@ -1387,7 +1382,7 @@
         return { id: player.id, name: player.name, place, baseXP, bonusXP, totalXP: baseXP + bonusXP, resigned: false };
       });
 
-      // Update Human User Stats (skip XP if resigned)
+      // Update Human User Stats
       const humanRes = room.finalResults.find(r => r.id === currentUser.uid);
       if (humanRes && !humanRes.resigned) {
         runTransaction(ref(db, `users/${currentUser.uid}`), (u) => {
@@ -1405,7 +1400,7 @@
           if (!u || typeof u !== 'object') {
             u = { name: userProfile.name, xp: 0, level: 1, gamesPlayed: 0, gamesWon: 0, currentRoom: null };
           }
-          u.gamesPlayed = (Number(u.gamesPlayed) || 0) + 1; // Count played match but 0 XP
+          u.gamesPlayed = (Number(u.gamesPlayed) || 0) + 1;
           return u;
         });
       }
@@ -1431,6 +1426,16 @@
       room.players.forEach(p => {
         handPoints[p.id] = (p.hand || []).reduce((a, b) => a + (b.points || 0), 0);
       });
+
+      // If someone resigned in a 2-player game, ensure the non-resigning player gets 1st place
+      if (room.players.length === 2 && room.players.some(p => p.resigned)) {
+        room.placements = [];
+        room.players.forEach(p => {
+          if (!p.resigned) {
+            room.placements.push({ id: p.id, name: p.name, place: 1 });
+          }
+        });
+      }
 
       room.finalResults = room.players.map(player => {
         if (player.resigned) {
